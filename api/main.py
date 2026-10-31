@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from json import JSONDecodeError
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from api.services.analysis_service import AnalysisService
 
@@ -18,15 +18,14 @@ SECRET_KEY = os.getenv("API_SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("API_SECRET_KEY não definida nas variáveis de ambiente.")
 
-
 class MeasurementInput(BaseModel):
     petId: int
-    activityLevel: float
-    sleepHours: float
-    heartRate: float
-    respiratoryRate: float
-    temperature: float
-    behaviorScore: float
+    activityLevel: float = Field(..., ge=0.0, le=100.0, description="Percentual de atividade entre 0 e 100")
+    sleepHours: float = Field(..., ge=0.0, le=24.0, description="Horas de sono entre 0 e 24")
+    heartRate: float = Field(..., ge=10.0, le=300.0, description="Frequência cardíaca em BPM")
+    respiratoryRate: float = Field(..., ge=5.0, le=100.0, description="Frequência respiratória")
+    temperature: float = Field(..., ge=30.0, le=45.0, description="Temperatura corporal em Celsius")
+    behaviorScore: float = Field(..., ge=0.0, le=10.0, description="Score de comportamento de 0 a 10")
 
 class AIAnalysisResponse(BaseModel):
     petId: int
