@@ -17,20 +17,8 @@ class AnalysisService:
         ultimo = self.history_service.obter_ultimo_registro(pet_id)
         medias = self.history_service.calcular_medias_historicas(pet_id)
 
-        if not ultimo and not payload:
-            return None
-        
         if not ultimo:
-            ultimo = {
-                "idadeAnos": 3.0,
-                "pesoKg": 10.0,
-                "atividadePct": 50.0,
-                "sonoHoras": 12.0,
-                "frequenciaCardiacaBpm": 100.0,
-                "frequenciaRespiratoria": 24.0,
-                "temperaturaC": 38.5,
-                "scoreComportamento": 8.0
-            }
+            return None
 
         if payload:
             if "activityLevel" in payload:
@@ -48,10 +36,10 @@ class AnalysisService:
 
         if not medias:
             medias = {
-                "mediaPesoKg": ultimo.get("pesoKg", 10.0),
-                "mediaAtividadePct": ultimo.get("atividadePct", 50.0),
-                "mediaSonoHoras": ultimo.get("sonoHoras", 12.0),
-                "mediaTemperaturaC": ultimo.get("temperaturaC", 38.5)
+                "mediaPesoKg": float(ultimo.get("pesoKg", 0.0)),
+                "mediaAtividadePct": float(ultimo.get("atividadePct", 0.0)),
+                "mediaSonoHoras": float(ultimo.get("sonoHoras", 0.0)),
+                "mediaTemperaturaC": float(ultimo.get("temperaturaC", 38.5))
             }
             
         metricas_map = [
@@ -74,8 +62,8 @@ class AnalysisService:
             })
 
         df_input = pd.DataFrame([{
-            "idade_anos": float(ultimo.get("idadeAnos", 3.0)), 
-            "peso_kg": float(ultimo.get("pesoKg", 10.0)),
+            "idade_anos": float(ultimo["idadeAnos"]), 
+            "peso_kg": float(ultimo["pesoKg"]),
             "atividade_diaria_pct": float(ultimo.get("atividadePct", 50.0)),
             "sono_horas": float(ultimo.get("sonoHoras", 12.0)),
             "frequencia_cardiaca_bpm": float(ultimo.get("frequenciaCardiacaBpm", 100.0)),
