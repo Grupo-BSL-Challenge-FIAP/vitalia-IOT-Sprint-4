@@ -41,12 +41,14 @@ _, X_test, _, y_test = train_test_split(
 
 y_pred = pipeline.predict(X_test)
 
+labels_ordem = ["NORMAL", "ATTENTION", "RISK"]
+
 metrics = {
     "accuracy": float(accuracy_score(y_test, y_pred)),
     "precision_macro": float(precision_score(y_test, y_pred, average="macro", zero_division=0)),
     "recall_macro": float(recall_score(y_test, y_pred, average="macro", zero_division=0)),
     "f1_macro": float(f1_score(y_test, y_pred, average="macro", zero_division=0)),
-    "confusion_matrix": confusion_matrix(y_test, y_pred).tolist()
+    "confusion_matrix": confusion_matrix(y_test, y_pred, labels=labels_ordem).tolist()
 }
 
 os.makedirs(os.path.dirname(METRICS_PATH), exist_ok=True)
@@ -56,10 +58,10 @@ with open(METRICS_PATH, "w", encoding="utf-8") as f:
 print(f"Métricas multiclasse salvas com sucesso em {METRICS_PATH}!")
 
 plt.figure(figsize=(6, 5))
-cm = confusion_matrix(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred, labels=labels_ordem)
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-            xticklabels=["NORMAL", "ATTENTION", "RISK"], 
-            yticklabels=["NORMAL", "ATTENTION", "RISK"])
+            xticklabels=labels_ordem, 
+            yticklabels=labels_ordem)
 plt.xlabel("Previsto")
 plt.ylabel("Real")
 plt.title("Matriz de Confusão Multiclasse")
