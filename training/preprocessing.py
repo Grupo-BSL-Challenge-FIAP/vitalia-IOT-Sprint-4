@@ -49,15 +49,12 @@ def generate_synthetic_data(filepath: str, num_records: int = 2000):
 
     status = []
     for ativ, sono_horas, fc, fr, temp, score in zip(atividade_diaria, sono_horas, freq_cardiaca, freq_respiratoria, temperatura, behavior_score):
-        if np.random.rand() < 0.05: 
-            st = np.random.choice(["NORMAL", "ATTENTION", "RISK"], p=[0.7, 0.2, 0.1])
+        if temp > 39.5 or temp < 37.0 or fc > 150 or fr > 45 or score < 4 or ativ < 30:
+            st = "RISK"
+        elif temp > 39.0 or temp < 37.5 or fc > 120 or fr > 35 or score < 6 or ativ < 50:
+            st = "ATTENTION"
         else:
-            if temp > 39.5 or temp < 37.0 or fc > 150 or fr > 45 or score < 4 or ativ < 30:
-                st = "RISK"
-            elif temp > 39.0 or temp < 37.5 or fc > 120 or fr > 35 or score < 6 or ativ < 50:
-                st = "ATTENTION"
-            else:
-                st = "NORMAL"
+            st = "NORMAL"
         status.append(st)
     
     df = pd.DataFrame({
