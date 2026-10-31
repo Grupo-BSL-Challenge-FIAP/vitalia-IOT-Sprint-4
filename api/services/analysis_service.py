@@ -85,11 +85,18 @@ class AnalysisService:
         }])
 
         status_ml = "NORMAL"
+        confidence_val = 1.0
         if self.pipeline:
             pred = self.pipeline.predict(df_input)
             val = str(pred[0])
             mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
             status_ml = mapping.get(val, val)
+            
+            try:
+                probabilidades = self.pipeline.predict_proba(df_input)
+                confidence_val = float(max(probabilidades[0]))
+            except Exception:
+                confidence_val = 1.0
 
         media_atividade = float(medias.get("mediaAtividadePct", 0))
         ativ_atual = float(ultimo.get("atividadePct", 0))
@@ -115,6 +122,7 @@ class AnalysisService:
             "variacaoPct": var_ativ,
             "tendencia": tendencia_qualitativa,
             "status": status_ml,
+            "confidence": round(confidence_val, 2),
             "alteracoes": alteracoes,
             "justificativaNumerica": justificativa_detalhada
         }
