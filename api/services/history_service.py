@@ -60,3 +60,23 @@ class HistoryService:
             "mediaSonoHoras": float(historical_df['sleep_hours'].mean().round(1)) if 'sleep_hours' in historical_df else 12.0,
             "mediaTemperaturaC": float(historical_df['temperature_c'].mean().round(1)) if 'temperature_c' in historical_df else 38.5
         }
+
+    def prever_regressao_peso(self, pet_id: int):
+        medicoes = self.repository.obter_historico_medicoes(pet_id)
+        if not medicoes or len(medicoes) < 2:
+            return None
+
+        pesos = [m.get("weight_kg") for m in medicoes if m.get("weight_kg") is not None]
+        if not pesos:
+            return None
+
+        peso_atual = pesos[0]
+        peso_anterior = pesos[1] if len(pesos) > 1 else peso_atual
+        variacao = round(peso_atual - peso_anterior, 2)
+
+        return {
+            "peso_atual": float(peso_atual),
+            "peso_anterior": float(peso_anterior),
+            "variacao": float(variacao),
+            "tendencia_peso": "ESTAVEL" if variacao == 0 else ("SUBIDA" if variacao > 0 else "DESCIDA")
+        }
