@@ -17,9 +17,38 @@ class LLMService:
             except Exception:
                 self.client = None
 
-    def answer(self, contexto: str, pergunta: str) -> str:
+    def answer(self, contexto, pergunta: str) -> str:
+        if isinstance(contexto, dict):
+            nome = contexto.get("nome", "Não informado")
+            especie = contexto.get("especie", "Não informada")
+            idade = contexto.get("idade", contexto.get("idadeAnos", "Não informada"))
+            peso = contexto.get("peso", contexto.get("pesoKg", "Não informado"))
+            fc = contexto.get("frequenciaCardiaca", contexto.get("frequenciaCardiacaBpm", "Não informada"))
+            fr = contexto.get("frequenciaRespiratoria", "Não informada")
+            temperatura = contexto.get("temperatura", contexto.get("temperaturaC", "Não informada"))
+            behavior_score = contexto.get("behaviorScore", contexto.get("scoreComportamento", "Não informado"))
+            historico = contexto.get("historicoRecente", contexto.get("historico", "Nenhum histórico recente disponível"))
+            status_ml = contexto.get("status", "NORMAL")
+            alteracoes = contexto.get("alteracoes", "Nenhuma alteração significativa detetada")
+
+            contexto_formatado = f"""
+                - Nome do pet: {nome}
+                - Espécie: {especie}
+                - Idade: {idade} anos
+                - Peso: {peso} kg
+                - Frequência cardíaca: {fc} bpm
+                - Frequência respiratória: {fr} rpm
+                - Temperatura: {temperatura} °C
+                - Behavior score: {behavior_score}
+                - Histórico recente: {historico}
+                - Status retornado pelo ML: {status_ml}
+                - Alterações detetadas: {alteracoes}
+            """
+        else:
+            contexto_formatado = str(contexto)
+
         if not self.client:
-            return f"[Modo Fallback - IA Indisponível/Sem Chave] Com base nos dados analisados do pet:\n{contexto}\n\nResposta padrão: Não foi possível contactar o serviço de IA no momento, mas os dados do pet encontram-se registados e seguros no sistema."
+            return f"[Modo Fallback - IA Indisponível/Sem Chave] Com base nos dados analisados do pet:\n{contexto_formatado}\n\nResposta padrão: Não foi possível contactar o serviço de IA no momento, mas os dados do pet encontram-se registados e seguros no sistema."
 
         prompt = f"""
 Você é o assistente virtual da Vitalia AI. A Vitalia AI é um apoio ao acompanhamento e à decisão.
@@ -30,9 +59,10 @@ Diretrizes obrigatórias:
 - Não afirme que o animal possui uma doença.
 - Não prescreva medicamentos ou tratamentos.
 - Oriente avaliação veterinária quando necessário.
+- O status do pet vem estritamente do modelo de Machine Learning (NORMAL, ATTENTION ou RISK). Utilize-o para explicar os resultados sem alterar a classe.
 
 Contexto estruturado do pet:
-{contexto}
+{contexto_formatado}
 
 Pergunta do tutor:
 {pergunta}
@@ -53,6 +83,6 @@ Pergunta do tutor:
             except Exception:
                 break
 
-        return f"[Modo Fallback de Segurança] O serviço de IA encontra-se temporariamente indisponível. Resumo baseado no contexto do pet:\n{contexto}\n\nRecomendação: Verifique os parâmetros vitais registados e consulte um médico veterinário em caso de dúvida."
+        return f"[Modo Fallback de Segurança] O serviço de IA encontra-se temporariamente indisponível. Resumo baseado no contexto do pet:\n{contexto_formatado}\n\nRecomendação: Verifique os parâmetros vitais registados e consulte um médico veterinário em caso de dúvida."
 
 llm_service = LLMService()
