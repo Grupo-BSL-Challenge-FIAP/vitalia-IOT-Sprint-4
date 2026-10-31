@@ -55,7 +55,6 @@ class HistoryService:
         historical_df = df.iloc[1:] if len(df) > 1 else df
 
         return {
-            "mediaPesoKg": float(historical_df['weight_kg'].mean().round(2)) if 'weight_kg' in historical_df else 0.0,
             "mediaAtividadePct": float(historical_df['activity_level'].mean().round(1)) if 'activity_level' in historical_df else 0.0,
             "mediaSonoHoras": float(historical_df['sleep_hours'].mean().round(1)) if 'sleep_hours' in historical_df else 12.0,
             "mediaTemperaturaC": float(historical_df['temperature_c'].mean().round(1)) if 'temperature_c' in historical_df else 38.5

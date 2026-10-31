@@ -43,7 +43,6 @@ class AnalysisService:
             }
             
         metricas_map = [
-            ("peso", float(ultimo.get("pesoKg", 0)), float(medias.get("mediaPesoKg", 0))),
             ("atividade", float(ultimo.get("atividadePct", 0)), float(medias.get("mediaAtividadePct", 0))),
             ("sono", float(ultimo.get("sonoHoras", 0)), float(medias.get("mediaSonoHoras", 0))),
             ("temperatura", float(ultimo.get("temperaturaC", 38.5)), float(medias.get("mediaTemperaturaC", 38.5)))
