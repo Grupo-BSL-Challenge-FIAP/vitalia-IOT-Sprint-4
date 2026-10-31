@@ -2,6 +2,9 @@
 import os
 import pandas as pd
 from api.services.history_service import HistoryService
+import logging
+
+logger = logging.getLogger(__name__)
 
 PIPELINE_PATH = "models/trained/vitalia_pipeline.pkl"
 
@@ -10,14 +13,19 @@ class AnalysisService:
         self.history_service = HistoryService()
         if os.path.exists(PIPELINE_PATH):
             self.pipeline = joblib.load(PIPELINE_PATH)
+            logger.info("Pipeline de machine learning carregado com sucesso.")
         else:
             self.pipeline = None
+            logger.warning("Aviso: Pipeline de machine learning não encontrado no caminho especificado.")
 
     def analisar_comportamento(self, pet_id: int, payload: dict = None):
+        logger.info(f"A iniciar análise de comportamento para o petId: {pet_id}")
+        
         ultimo = self.history_service.obter_ultimo_registro(pet_id)
         medias = self.history_service.calcular_medias_historicas(pet_id)
 
         if not ultimo:
+            logger.warning(f"Nenhum registo histórico encontrado para o petId: {pet_id}")
             return None
 
         if payload:
@@ -74,15 +82,16 @@ class AnalysisService:
         status_ml = "NORMAL"
         confidence_val = 1.0
         if self.pipeline:
-            pred = self.pipeline.predict(df_input)
-            val = str(pred[0])
-            mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
-            status_ml = mapping.get(val, val)
-            
             try:
+                pred = self.pipeline.predict(df_input)
+                val = str(pred[0])
+                mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
+                status_ml = mapping.get(val, val)
+                
                 probabilidades = self.pipeline.predict_proba(df_input)
                 confidence_val = float(max(probabilidades[0]))
-            except Exception:
+            except Exception as e:
+                logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
                 confidence_val = 1.0
 
         media_atividade = float(medias.get("mediaAtividadePct", 0))
@@ -101,6 +110,8 @@ class AnalysisService:
             )
         
         justificativa_detalhada = " | ".join(linhas_justificativa)
+
+        logger.info(f"Análise concluída com sucesso para o petId: {pet_id} | Status: {status_ml}")
 
         return {
             "petId": pet_id,
