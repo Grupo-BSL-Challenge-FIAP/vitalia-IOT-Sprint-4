@@ -172,31 +172,30 @@ async def perguntar_ao_pet(pet_id: str, body: QuestionInput, credentials: str = 
     if not pergunta_texto:
         raise HTTPException(status_code=422, detail="A pergunta não pode estar vazia.")
         
+    pet_info = history_service.repository.obter_informacoes_pet(pid_int)
+    
     ultimo = history_service.obter_ultimo_registro(pid_int)
     if not ultimo:
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico.")
         
-    medias = history_service.calcular_medias_historicas(pid_int)
+    medicoes = history_service.repository.obter_historico_medicoes(pid_int)
     resultado_analise = analysis_service.analisar_comportamento(pid_int)
     
     if not resultado_analise:
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico.")
 
     contexto = {
-        "petId": pet_id,
-        "dados_atuais": {
-            "peso": ultimo.get('pesoKg'),
-            "atividade": ultimo.get('atividadePct'),
-            "sono": ultimo.get('sonoHoras')
-        },
-        "medias_historicas": {
-            "peso": medias.get('mediaPesoKg'),
-            "atividade": medias.get('mediaAtividadePct'),
-            "sono": medias.get('mediaSonoHoras')
-        },
-        "tendencia": resultado_analise.get("tendencia"),
-        "classificacao": resultado_analise.get("status"),
-        "alteracoes_identificadas": resultado_analise.get("alteracoes", [])
+        "nome": pet_info.get("name", f"Pet {pet_id}") if pet_info else f"Pet {pet_id}",
+        "especie": pet_info.get("species", "Não informada") if pet_info else "Não informada",
+        "idade": ultimo.get("idadeAnos"),
+        "peso": ultimo.get("pesoKg"),
+        "frequenciaCardiaca": ultimo.get("frequenciaCardiacaBpm"),
+        "frequenciaRespiratoria": ultimo.get("frequenciaRespiratoria"),
+        "temperatura": ultimo.get("temperaturaC"),
+        "behaviorScore": ultimo.get("scoreComportamento"),
+        "historicoRecente": medicoes[:5] if medicoes else [], 
+        "status": resultado_analise.get("status", "NORMAL"),
+        "alteracoes": resultado_analise.get("justificativaNumerica", "Nenhuma alteração significativa detetada.")
     }
     
     resposta = llm_service.answer(contexto, pergunta_texto)
