@@ -48,7 +48,7 @@ def generate_synthetic_data(filepath: str, num_records: int = 2000):
     behavior_score = [round(float(np.clip(np.random.normal(8, 2), 1, 10)), 1) for _ in range(num_records)]
 
     status = []
-    for ativ, sono_horas, fc, fr, temp, score in zip(atividade_diaria, sono_horas, freq_cardiaca, freq_respiratoria, temperatura, behavior_score):
+    for ativ, sono_h, fc, fr, temp, score in zip(atividade_diaria, sono_horas, freq_cardiaca, freq_respiratoria, temperatura, behavior_score):
         if temp > 39.5 or temp < 37.0 or fc > 150 or fr > 45 or score < 4 or ativ < 30:
             st = "RISK"
         elif temp > 39.0 or temp < 37.5 or fc > 120 or fr > 35 or score < 6 or ativ < 50:
@@ -63,7 +63,7 @@ def generate_synthetic_data(filepath: str, num_records: int = 2000):
         'idade_anos': idades_fixas,
         'peso_kg': pesos_variados,
         'atividade_diaria_pct': atividade_diaria,
-        'sono_horas': sono_horas, 
+        'sono_horas': sono_horas,
         'frequencia_cardiaca_bpm': freq_cardiaca,
         'frequencia_respiratoria': freq_respiratoria,
         'temperatura_c': temperatura,
