@@ -81,3 +81,24 @@ def test_analisar_comportamento_confidence_e_variacoes(analysis_service):
     assert resultado["confidence"] == 0.98
     assert "alteracoes" in resultado
     assert "tendencia" in resultado
+
+def test_analisar_comportamento_pet_inexistente(analysis_service):
+    analysis_service.history_service.obter_ultimo_registro = MagicMock(return_value=None)
+
+    resultado = analysis_service.analisar_comportamento(pet_id=9999)
+    
+    assert resultado is None
+
+def test_analisar_comportamento_falha_no_modelo(analysis_service):
+    analysis_service.history_service.obter_ultimo_registro = MagicMock(return_value={
+        "idadeAnos": 3.0, "pesoKg": 10.0, "atividadePct": 60.0, "sonoHoras": 12.0,
+        "frequenciaCardiacaBpm": 100.0, "frequenciaRespiratoria": 24.0, "temperaturaC": 38.5, "scoreComportamento": 8.0
+    })
+    analysis_service.history_service.calcular_medias_historicas = MagicMock(return_value={
+        "mediaAtividadePct": 60.0, "mediaSonoHoras": 12.0, "mediaTemperaturaC": 38.5
+    })
+    
+    analysis_service.pipeline.predict.side_effect = Exception("Erro interno no modelo de Machine Learning")
+
+    with pytest.raises(Exception):
+        analysis_service.analisar_comportamento(pet_id=1)

@@ -10,7 +10,7 @@ def mock_repository():
 def history_service(mock_repository):
     return HistoryService(repository=mock_repository)
 
-def test_obter_ultimo_registro_existente(history_service, mock_repository):
+def test_obter_ultimo_registro(history_service, mock_repository):
     mock_repository.obter_informacoes_pet.return_value = {
         "pet_id": 1,
         "birth_date": "2023-01-01",
@@ -30,10 +30,14 @@ def test_obter_ultimo_registro_existente(history_service, mock_repository):
 
     assert resultado is not None
     assert resultado["petId"] == 1
-    assert resultado["pesoKg"] == 12.5
     assert resultado["atividadePct"] == 60.0
+    assert resultado["sonoHoras"] == 10.0
+    assert resultado["frequenciaCardiacaBpm"] == 95.0
+    assert resultado["frequenciaRespiratoria"] == 22.0
+    assert resultado["temperaturaC"] == 38.2
+    assert resultado["scoreComportamento"] == 9.0
 
-def test_obter_ultimo_registro_inexistente(history_service, mock_repository):
+def test_pet_inexistente(history_service, mock_repository):
     mock_repository.obter_informacoes_pet.return_value = None
     mock_repository.obter_historico_medicoes.return_value = []
 
@@ -49,8 +53,7 @@ def test_historico_vazio(history_service, mock_repository):
 
 def test_calcular_medias_historicas(history_service, mock_repository):
     mock_repository.obter_historico_medicoes.return_value = [
-        {"activity_level": 70.0, "sleep_hours": 11.0, "temperature_c": 38.5},
-        {"activity_level": 50.0, "sleep_hours": 13.0, "temperature_c": 38.1}
+        {"activity_level": 50.0, "sleep_hours": 12.0, "temperature_c": 38.2, "heart_rate_bpm": 95.0, "respiratory_rate": 22.0, "behavior_score": 9.0}
     ]
 
     medias = history_service.calcular_medias_historicas(1)
