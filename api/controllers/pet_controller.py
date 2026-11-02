@@ -128,7 +128,7 @@ async def prever_comportamento(pet_id: str, dados_pet: PetDataInput, credentials
     predicao = pipeline.predict(df_entrada)
     raw_pred = predicao[0]
     
-    text_to_id = {"NORMAL": 0, "ATTENTION": 1, "RISK": 2, "ATENÇÃO": 1, "ALERTA": 2}
+    text_to_id = {"NORMAL": 0, "ATTENTION": 1, "RISK": 2}
     id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
     
     if isinstance(raw_pred, (int, np.integer)):
@@ -136,10 +136,6 @@ async def prever_comportamento(pet_id: str, dados_pet: PetDataInput, credentials
         status_text = id_to_text.get(class_id, "NORMAL")
     else:
         status_text = str(raw_pred).upper()
-        if status_text == "ATENÇÃO":
-            status_text = "ATTENTION"
-        elif status_text == "ALERTA":
-            status_text = "RISK"
         class_id = text_to_id.get(status_text, 0)
     
     confidence = 0.0
