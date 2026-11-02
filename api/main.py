@@ -10,6 +10,8 @@ from api.services.analysis_service import AnalysisService
 
 from api.controllers.pet_controller import router as pet_router
 from api.security import verificar_autenticacao
+from api.exceptions import DatabaseConnectionError
+from fastapi import FastAPI, Request
 
 load_dotenv()
 
@@ -125,3 +127,10 @@ def health_check():
         "status": "online",
         "message": "Vitalia AI API está a funcionar perfeitamente!"
     }
+
+@app.exception_handler(DatabaseConnectionError)
+async def database_connection_exception_handler(request: Request, exc: DatabaseConnectionError):
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Banco de dados temporariamente indisponível."},
+    )
