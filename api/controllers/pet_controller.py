@@ -218,17 +218,26 @@ async def get_pet_trends(pet_id: str, credentials: str = Depends(verificar_auten
     if not resultado:
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico.")
         
-    regressao_peso = history_service.prever_regressao_peso(pid_int)
-    if not regressao_peso:
-        raise HTTPException(status_code=422, detail="Histórico insuficiente para realizar a previsão.")
+    medicoes = history_service.repository.obter_historico_medicoes(pid_int)
+    if not medicoes:
+        raise HTTPException(status_code=422, detail="Histórico insuficiente para calcular tendências.")
+
+    df = pd.DataFrame(medicoes)
 
     return {
         "pet_id": pet_id,
-        "tendencia": resultado["tendencia"],
-        "variacao_pct": resultado["variacaoPct"],
-        "media_historica": resultado["mediaHistorica"],
-        "atividade_atual": resultado["atual"],
-        "regressao_peso": regressao_peso,
-        "documentacao": "A previsão de peso utiliza dados simulados, pois os dados reais do dispositivo IoT ainda não estão disponíveis.",
-        "detalhes": resultado["justificativaNumerica"]
+        "tendencia_geral": resultado.get("tendencia"),
+        "status_analise": resultado.get("status"),
+        "variacao_pct_atividade": resultado.get("variacaoPct"),
+        "media_historica_atividade": resultado.get("mediaHistorica"),
+        "atividade_atual": resultado.get("atual"),
+        "tendencias_reais": {
+            "atividade": df['activity_level'].tolist() if 'activity_level' in df else [],
+            "sono": df['sleep_hours'].tolist() if 'sleep_hours' in df else [],
+            "temperatura": df['temperature_c'].tolist() if 'temperature_c' in df else [],
+            "frequencia_cardiaca": df['heart_rate_bpm'].tolist() if 'heart_rate_bpm' in df else [],
+            "frequencia_respiratoria": df['respiratory_rate'].tolist() if 'respiratory_rate' in df else [],
+            "behavior_score": df['behavior_score'].tolist() if 'behavior_score' in df else []
+        },
+        "detalhes": resultado.get("justificativaNumerica")
     }
