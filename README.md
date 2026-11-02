@@ -69,10 +69,10 @@ Tutores de pets, clínicas veterinárias e plataformas integradas de gestão de 
 * Justificativa: Selecionado após testes comparativos entre múltiplos algoritmos (Logistic Regression, Random Forest, KNN, SVM e Decision Tree) por apresentar excelente desempenho em dados tabulares, alta interpretabilidade das regras de decisão e o melhor equilíbrio métrico (F1-Score Macro).
 
 ### 6. Métricas Reais (Geradas pelo evaluation.py)
-* Accuracy  = ~0.90 (90.35%)
-* Precision = 1.0
-* Recall    = 1.0
-* F1(Macro) = 0.90350
+* Accuracy  = 99.65% (0.9965)
+* Precision = 99.69% (0.9969)
+* Recall    = 97.22% (0.9722)
+* F1(Macro) = 98.40% (0.9840)
 
 ### Matriz de Confusão
 A matriz de confusão valida a capacidade de classificação correta nas três classes operacionais de monitoramento:
