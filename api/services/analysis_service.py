@@ -76,7 +76,7 @@ class AnalysisService:
             "sono_horas": float(ultimo.get("sonoHoras", 12.0)),
             "frequencia_cardiaca_bpm": float(ultimo.get("frequenciaCardiacaBpm", 100.0)),
             "frequencia_respiratoria": float(ultimo.get("frequenciaRespiratoria", 24.0)),
-            "temperatura_c": float(ultimo.get("temperature_c", 38.5)),
+            "temperatura_c": float(ultimo.get("temperaturaC", 38.5)),
             "score_comportamento": float(ultimo.get("scoreComportamento", 8.0))
         }])
 
