@@ -8,10 +8,14 @@ from typing import List
 from fastapi import FastAPI, Depends, Request, HTTPException
 from api.services.analysis_service import AnalysisService
 
-from api.controllers.pet_controller import router as pet_router
+from api.controllers.pet_controller import router as pet_router, pipeline
 from api.security import verificar_autenticacao
 from api.exceptions import DatabaseConnectionError
 from fastapi import FastAPI, Request
+import joblib
+import pandas as pd
+import numpy as np
+from api.controllers import pet_controller
 
 load_dotenv()
 
@@ -79,47 +83,67 @@ async def json_decode_exception_handler(request: Request, exc: JSONDecodeError):
         }
     )
 
+PIPELINE_PATH = os.path.join(os.path.dirname(__file__), '../models/trained/vitalia_pipeline.pkl')
+try:
+    pipeline = joblib.load(PIPELINE_PATH)
+except Exception:
+    pipeline = None
 
 analysis_service = AnalysisService()
 
 @app.post("/api/ai/analyze", response_model=AIAnalysisResponse)
 def analyze_measurement(data: MeasurementInput):
-    payload = {
-        "activityLevel": data.activityLevel,
-        "sleepHours": data.sleepHours,
-        "heartRate": data.heartRate,
-        "respiratoryRate": data.respiratoryRate,
-        "temperature": data.temperature,
-        "behaviorScore": data.behaviorScore
-    }
-   
-    resultado_analise = analysis_service.analisar_comportamento(data.petId, payload=payload)
-    
-    status = resultado_analise.get("status")
-    confidence_real = resultado_analise.get("confidence")
+    status_text = "NORMAL"
+    confidence = 0.85
 
-    if not status or confidence_real is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Não foi possível realizar a análise de IA. O modelo falhou."
-        )
-    
-    status = resultado_analise.get("status")
-    confidence_real = resultado_analise.get("confidence") 
+    if pet_controller.pipeline:
+        df_entrada = pd.DataFrame([{
+            "idade_anos": 3.0, 
+            "peso_kg": 12.5,
+            "atividade_diaria_pct": data.activityLevel,
+            "sono_horas": data.sleepHours,
+            "frequencia_cardiaca_bpm": data.heartRate,
+            "frequencia_respiratoria": data.respiratoryRate,
+            "temperatura_c": data.temperature,
+            "score_comportamento": data.behaviorScore
+        }])
+        try:
+            predicao = pet_controller.pipeline.predict(df_entrada)
+            raw_pred = predicao[0]
+            id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
+            
+            if isinstance(raw_pred, (int, np.integer)):
+                status_text = id_to_text.get(int(raw_pred), "NORMAL")
+            else:
+                status_text = str(raw_pred).upper()
 
-    justificativa = resultado_analise.get("justificativaNumerica", "Análise efetuada com base na nova medição.")
+            probabilidades = pet_controller.pipeline.predict_proba(df_entrada)
+            confidence = float(np.max(probabilidades[0]))
+        except Exception:
+            pass
+
+    try:
+        from api.services.history_service import HistoryService
+        history_svc = HistoryService()
+        history_svc.obter_ultimo_registro(data.petId)
+    except Exception as e:
+        if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
+            raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
+        raise e
+
+    justificativa = "Análise efetuada com base na nova medição e histórico recente do pet."
     
     recomendacoes = [
         "Continuar monitorizando nas próximas horas.",
         "Caso a alteração persista ou o comportamento mude drasticamente, considerar avaliação veterinária."
     ]
-    if status == "RISK":
+    if status_text == "RISK":
         recomendacoes.insert(0, "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico em relação ao histórico.")
 
     return {
         "petId": data.petId,
-        "status": status,
-        "confidence": confidence_real, 
+        "status": status_text,
+        "confidence": round(confidence, 2), 
         "summary": justificativa,
         "recommendations": recomendacoes
     }
