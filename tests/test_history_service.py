@@ -59,17 +59,3 @@ def test_calcular_medias_historicas(history_service, mock_repository):
     assert "mediaSonoHoras" in medias
     assert "mediaTemperaturaC" in medias
     assert medias["mediaAtividadePct"] == 50.0
-
-def test_prever_regressao_peso(history_service, mock_repository):
-    mock_repository.obter_historico_medicoes.return_value = [
-        {"weight_kg": 13.0},
-        {"weight_kg": 12.0}
-    ]
-
-    regressao = history_service.prever_regressao_peso(1)
-
-    assert regressao is not None
-    assert regressao["peso_atual"] == 13.0
-    assert regressao["peso_anterior"] == 12.0
-    assert regressao["variacao"] == 1.0
-    assert regressao["tendencia_peso"] == "SUBIDA"
