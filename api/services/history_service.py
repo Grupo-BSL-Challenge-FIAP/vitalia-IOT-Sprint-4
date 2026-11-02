@@ -60,3 +60,26 @@ class HistoryService:
             "mediaTemperaturaC": float(historical_df['temperature_c'].mean().round(1)) if 'temperature_c' in historical_df else 38.5
         }
 
+    def prever_regressao_peso(self, pet_id: int):
+        medicoes = self.repository.obter_historico_medicoes(pet_id)
+        if not medicoes or len(medicoes) < 2:
+            return None
+        
+        peso_atual = float(medicoes[0].get("weight_kg", 0.0))
+        peso_anterior = float(medicoes[1].get("weight_kg", 0.0))
+        variacao = float(peso_atual - peso_anterior)
+        
+        if variacao > 0:
+            tendencia = "SUBIDA"
+        elif variacao < 0:
+            tendencia = "DESCIDA"
+        else:
+            tendencia = "ESTÁVEL"
+        
+        return {
+            "peso_atual": peso_atual,
+            "peso_anterior": peso_anterior,
+            "variacao": variacao,
+            "tendencia_peso": tendencia
+        }
+
