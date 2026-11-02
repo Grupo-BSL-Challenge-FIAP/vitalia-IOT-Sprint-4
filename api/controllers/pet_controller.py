@@ -286,17 +286,14 @@ async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials:
         if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
             raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
 
-    recomendacoes = [
-        "Continuar monitorizando nas próximas horas.",
-        "Caso a alteração persista ou o comportamento mude drasticamente, considerar avaliação veterinária."
-    ]
+    recomendacao = "Acompanhe as alterações nas próximas horas."
     if status_text == "RISK":
-        recomendacoes.insert(0, "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico em relação ao histórico.")
+        recomendacao = "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico. Considerar avaliação veterinária."
+    elif status_text == "ATTENTION":
+        recomendacao = "Acompanhe as alterações identificadas nas próximas horas."
 
     return {
-        "petId": data.petId,
         "status": status_text,
-        "confidence": round(confidence, 2), 
-        "summary": "Análise efetuada com base na nova medição e histórico recente do pet.",
-        "recommendations": recomendacoes
+        "confidence": round(confidence, 2),
+        "recommendation": recomendacao
     }
