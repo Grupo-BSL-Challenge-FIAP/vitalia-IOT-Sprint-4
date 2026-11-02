@@ -95,16 +95,19 @@ def analyze_measurement(data: MeasurementInput):
    
     resultado_analise = analysis_service.analisar_comportamento(data.petId, payload=payload)
     
-    if not resultado_analise:
+    status = resultado_analise.get("status")
+    confidence_real = resultado_analise.get("confidence")
+
+    if not status or confidence_real is None:
         raise HTTPException(
             status_code=503,
-            detail="Não foi possível realizar a análise de IA. O serviço de predição falhou ou retornou um resultado vazio."
+            detail="Não foi possível realizar a análise de IA. O modelo falhou."
         )
     
-    status = resultado_analise.get("status", "NORMAL")
+    status = resultado_analise.get("status")
+    confidence_real = resultado_analise.get("confidence") 
+
     justificativa = resultado_analise.get("justificativaNumerica", "Análise efetuada com base na nova medição.")
-    
-    confidence_real = resultado_analise.get("confidence", 0.92)
     
     recomendacoes = [
         "Continuar monitorizando nas próximas horas.",

@@ -143,7 +143,7 @@ async def prever_comportamento(pet_id: str, dados_pet: PetDataInput, credentials
         probabilidades = pipeline.predict_proba(df_entrada)
         confidence = float(np.max(probabilidades[0]))
     except Exception:
-        confidence = 1.0
+        confidence = 0.0
         
     try:
         pid_formatted = int(pet_id)
@@ -190,7 +190,7 @@ async def perguntar_ao_pet(pet_id: str, body: QuestionInput, credentials: str = 
         "temperatura": ultimo.get("temperaturaC"),
         "behaviorScore": ultimo.get("scoreComportamento"),
         "historicoRecente": medicoes[:5] if medicoes else [], 
-        "status": resultado_analise.get("status", "NORMAL"),
+        "status": resultado_analise.get("status"),
         "alteracoes": resultado_analise.get("justificativaNumerica", "Nenhuma alteração significativa detetada.")
     }
     

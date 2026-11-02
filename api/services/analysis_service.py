@@ -81,7 +81,6 @@ class AnalysisService:
         }])
 
         status_ml = "NORMAL"
-        confidence_val = 1.0
         if self.pipeline:
             try:
                 pred = self.pipeline.predict(df_input)
@@ -92,8 +91,9 @@ class AnalysisService:
                 probabilidades = self.pipeline.predict_proba(df_input)
                 confidence_val = float(max(probabilidades[0]))
             except Exception as e:
-                logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
-                confidence_val = 1.0
+              logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
+              status_ml = "INDISPONIVEL"
+              confidence_val = None
 
         media_atividade = float(medias.get("mediaAtividadePct", 0))
         ativ_atual = float(ultimo.get("atividadePct", 0))
