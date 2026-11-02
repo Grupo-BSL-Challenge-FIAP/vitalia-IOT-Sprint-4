@@ -1,12 +1,9 @@
 import os
 import oracledb
 from dotenv import load_dotenv
+from api.exceptions import DatabaseConnectionError
 
 load_dotenv()
-
-class DatabaseConnectionError(Exception):
-    """Exceção lançada quando a base de dados está indisponível."""
-    pass
 
 class PetRepository:
     def __init__(self):
