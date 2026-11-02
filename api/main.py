@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from json import JSONDecodeError
 from pydantic import BaseModel, Field
 from typing import List
+from fastapi import FastAPI, Depends, Request, HTTPException
 from api.services.analysis_service import AnalysisService
 
 from api.controllers.pet_controller import router as pet_router
@@ -94,13 +94,10 @@ def analyze_measurement(data: MeasurementInput):
     resultado_analise = analysis_service.analisar_comportamento(data.petId, payload=payload)
     
     if not resultado_analise:
-        return {
-            "petId": data.petId,
-            "status": "NORMAL",
-            "confidence": 0.85,
-            "summary": "Registo do pet processado com sucesso utilizando a nova medição.",
-            "recommendations": ["Continuar com a rotina normal de monitorização."]
-        }
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível realizar a análise de IA. O serviço de predição falhou ou retornou um resultado vazio."
+        )
     
     status = resultado_analise.get("status", "NORMAL")
     justificativa = resultado_analise.get("justificativaNumerica", "Análise efetuada com base na nova medição.")
