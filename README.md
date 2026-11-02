@@ -105,30 +105,18 @@ A Vitalia AI é uma ferramenta de suporte analítico e não realiza diagnóstico
 preprocessing → training → evaluation → tests → API
 ```
 
-#### Fluxo de Dados: MVP Atual vs. Arquitetura Futura
+#### Fluxo de Integração
 * MVP Atual
 ```text
-Dados simulados → HistoryService → AnalysisService → Machine Learning → Gemini → FastAPI → Aplicativo
+IoT → Java → Oracle → IA → Java → Mobile
 ```
-* Evolução / Arquitetura Futura:
-```text
-IoT (ESP32) → Java Backend → Oracle Database → Vitalia AI (Python) → Mobile
-```
-⚠️ Atenção: A integração física e automatizada do hardware IoT (IoT → Java → Oracle → IA → Mobile) representa a arquitetura futura planejada e os dados de telemetria no MVP atual são simulados para fins de validação técnica.
-
-
 ```mermaid
 graph TD
-    A[Aplicativo Mobile] --> B[FastAPI / Backend]
-    B --> C[HistoryService / Banco]
-    C --> D[AnalysisService & Machine Learning]
-    D --> E[Google Gemini AI]
-    E --> F[Insights & Alertas]
-
-    subgraph Evolução Futura
-        I[Dispositivo IoT / ESP32] --> J[Java Backend / Oracle DB]
-        J --> B
-    end
+    I[IoT] --> J1[Java]
+    J1 --> O[Oracle]
+    O --> A[IA]
+    A --> J2[Java]
+    J2 --> M[Mobile]
 ```
 
 ### 11. Endpoints Reais da API
@@ -175,63 +163,26 @@ python -m pytest -q
 uvicorn api.main:app --reload
 ```
 
-## 13. Arquitetura do Sistema
-
-```mermaid
-graph TD
-    A[Aplicativo] --> B[Backends / APIs]
-    B --> C[Banco de dados]
-    C --> D[Vitalia AI]
-    D --> E[HistoryService]
-    E --> F[AnalysisService / ML]
-    F --> G[Gemini]
-    G --> H[Insights]
-
-    subgraph Evolução Futura
-        I[Dispositivo IoT] --> J[Dados reais]
-    end
-```
-
-### 14. Importante:
-No MVP atual, os dados provenientes da camada IoT são simulados. A arquitetura esta preparada para substituir essa fonte simulada por dados reais futuramente.
-
-##  Fluxo de Dados: Atual vs. Arquitetura Futura
-
-### MVP Atual
-No estagio atual do MVP, o fluxo de dados opera de forma simulada e integrada aos serviçõs internos:
-```text
-Dados simulados -> HistoryService -> AnalysisService -> Machine Learning -> Gemini -> FastAPI -> Aplicativo
-```
-
-### 15. Arquitetura Futura:
-Na evolução planejada para o projeto, a coleta de dados passará a ser automatizada por hardware real conectando-se diretamente ao ecossistema de persistência e inteligência:
-```text
-Dispositivo IoT -> Backend -> Oracle -> IA -> Aplicativo
-```
-
-### 16.Atenção
-A integração fi­sica e automatizada (ESP32 -> Oracle -> IA) representa a evolução futura e ainda não está ativa no ambiente do MVP atual.
-
-### 17. Detalhes Técnicos, Machine Learning & Pré-processamento
+### 13. Detalhes Técnicos, Machine Learning & Pré-processamento
 * **Histórico Individual por Pet**: Armazenamento e consulta de dados segregados por ID do pet.
 * **Médias, Tendências e Alterações**: Cálculo automatizado de médias históricas, rastreamento de tendências temporais e identificação de desvios comportamentais.
 * **Features & Preprocessing**: Atributos de telemetria focados em idade, peso, atividade diária, padrão de sono e sinais vitais (frequência cardíaca, frequência respiratória, temperatura e score comportamental), submetidos a etapas de limpeza e validação estrutural.
 * **Decision Tree & Motivo da Escolha**: O modelo utiliza o algoritmo **Decision Tree Classifier** em virtude do seu excelente desempenho preditivo em dados tabulares, alta interpretabilidade e melhor resultado no benchmarking entre os modelos avaliados.
 * **Ambiente de Execução**: Projeto configurado, executado e validado nativamente em **Python**.
 
-### 18. Decision Tree
+### 14. Decision Tree
 * O algoritmo **Decision Tree** foi o modelo vencedor na avaliação comparativa (alcançando a métrica F1-Macro de 98.40%), superando os outros algoritmos candidatos (Logistic Regression, Random Forest, KNN e SVM) na classificação do estado de saúde dos pets.
 
-### 19. Distinção entre Classificação e Alteração Histórica
+### 15. Distinção entre Classificação e Alteração Histórica
 * **Machine Learning**: Responsável por classificar o estado dos dados atuais.
 * **AnalysisService**: Responsável por comparar o registro atual com o histórico individual, explicando eventuais variações em relação à evolução temporal do pet sem que pequenas oscilações configurem obrigatoriamente um erro de modelo.
 
-### 20. 📱 Prints da Aplicação
+### 16. 📱 Prints da Aplicação
 * 1. Interface Mobile / Telas do Aplicativo
 * 2. Secção de Alertas e Estados (Normal / Attention / Risk)
 * 3. Chat Interativo com o Assistente Gemini
 
-### 21. 🛠️ Tecnologias Utilizadas
+### 17. 🛠️ Tecnologias Utilizadas
 * 1. Linguagem: Python
 * 2. Framework Web: FastAPI
 * 3. Machine Learning: Scikit-Learn
