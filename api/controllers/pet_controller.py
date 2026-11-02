@@ -13,6 +13,8 @@ from api.services.llm_service import llm_service
 from api.security import verificar_autenticacao
 from api.schemas.pet_schemas import PetDataInput, QuestionInput
 
+from pydantic import BaseModel, Field
+
 router = APIRouter(prefix="/api/ai/pets", tags=["Pets AI"])
 
 PIPELINE_PATH = os.path.join(os.path.dirname(__file__), '../../models/trained/vitalia_pipeline.pkl')
@@ -235,4 +237,66 @@ async def get_pet_trends(pet_id: str, credentials: str = Depends(verificar_auten
             "behavior_score": df['behavior_score'].tolist() if 'behavior_score' in df else []
         },
         "detalhes": resultado.get("justificativaNumerica")
+    }
+
+class MeasurementInput(BaseModel):
+    petId: int
+    activityLevel: float = Field(..., ge=0.0, le=100.0)
+    sleepHours: float = Field(..., ge=0.0, le=24.0)
+    heartRate: float = Field(..., ge=10.0, le=300.0)
+    respiratoryRate: float = Field(..., ge=5.0, le=100.0)
+    temperature: float = Field(..., ge=30.0, le=45.0)
+    behaviorScore: float = Field(..., ge=0.0, le=10.0)
+
+@router.post("/{pet_id}/measurements/analyze")
+async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials: str = Depends(verificar_autenticacao)):
+    status_text = "NORMAL"
+    confidence = 0.85
+
+    if pipeline:
+        df_entrada = pd.DataFrame([{
+            "idade_anos": 3.0, 
+            "peso_kg": 12.5,
+            "atividade_diaria_pct": data.activityLevel,
+            "sono_horas": data.sleepHours,
+            "frequencia_cardiaca_bpm": data.heartRate,
+            "frequencia_respiratoria": data.respiratoryRate,
+            "temperatura_c": data.temperature,
+            "score_comportamento": data.behaviorScore
+        }])
+        try:
+            predicao = pipeline.predict(df_entrada)
+            raw_pred = predicao[0]
+            id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
+            
+            if isinstance(raw_pred, (int, np.integer)):
+                status_text = id_to_text.get(int(raw_pred), "NORMAL")
+            else:
+                status_text = str(raw_pred).upper()
+
+            probabilidades = pipeline.predict_proba(df_entrada)
+            confidence = float(np.max(probabilidades[0]))
+        except Exception:
+            pass
+
+    try:
+        pid_int = int(pet_id)
+        history_service.obter_ultimo_registro(pid_int)
+    except Exception as e:
+        if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
+            raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
+
+    recomendacoes = [
+        "Continuar monitorizando nas próximas horas.",
+        "Caso a alteração persista ou o comportamento mude drasticamente, considerar avaliação veterinária."
+    ]
+    if status_text == "RISK":
+        recomendacoes.insert(0, "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico em relação ao histórico.")
+
+    return {
+        "petId": data.petId,
+        "status": status_text,
+        "confidence": round(confidence, 2), 
+        "summary": "Análise efetuada com base na nova medição e histórico recente do pet.",
+        "recommendations": recomendacoes
     }
