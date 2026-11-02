@@ -181,8 +181,8 @@ async def perguntar_ao_pet(pet_id: str, body: QuestionInput, credentials: str = 
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico.")
 
     contexto = {
-        "nome": pet_info.get("name", f"Pet {pet_id}") if pet_info else f"Pet {pet_id}",
-        "especie": pet_info.get("species", "Não informada") if pet_info else "Não informada",
+        "nome": pet_info.get("nome") or pet_info.get("name", f"Pet {pet_id}") if pet_info else f"Pet {pet_id}",
+        "especie": pet_info.get("especie") or pet_info.get("species", "Não informada") if pet_info else "Não informada",
         "idade": ultimo.get("idadeAnos"),
         "peso": ultimo.get("pesoKg"),
         "frequenciaCardiaca": ultimo.get("frequenciaCardiacaBpm"),

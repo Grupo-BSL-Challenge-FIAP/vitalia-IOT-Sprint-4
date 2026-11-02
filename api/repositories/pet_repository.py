@@ -23,9 +23,11 @@ class PetRepository:
 
     def obter_informacoes_pet(self, pet_id: int):
         query = """
-            SELECT PET_ID, NAME, BIRTH_DATE, BREED_ID, WEIGHT_KG, SEX, STATUS
-            FROM TB_VITALIA_PET
-            WHERE PET_ID = :pet_id
+            SELECT p.PET_ID, p.NAME, p.BIRTH_DATE, p.BREED_ID, p.WEIGHT_KG, p.SEX, p.STATUS, s.SPECIES_NAME
+            FROM TB_VITALIA_PET p
+            LEFT JOIN TB_VITALIA_BREED b ON p.BREED_ID = b.BREED_ID
+            LEFT JOIN TB_VITALIA_SPECIES s ON b.SPECIES_ID = s.SPECIES_ID
+            WHERE p.PET_ID = :pet_id
         """
 
         with self._get_connection() as conn:
@@ -47,7 +49,9 @@ class PetRepository:
                         "sex": row[5],
                         "SEX": row[5],
                         "status": row[6],
-                        "STATUS": row[6]
+                        "STATUS": row[6],
+                        "especie": row[7] if len(row) > 7 else "Não informada",
+                        "ESPECIE": row[7] if len(row) > 7 else "Não informada",
                     }
         return None 
 
