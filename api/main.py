@@ -105,6 +105,8 @@ def analyze_measurement(data: MeasurementInput):
     status = resultado_analise.get("status", "NORMAL")
     justificativa = resultado_analise.get("justificativaNumerica", "Análise efetuada com base na nova medição.")
     
+    confidence_real = resultado_analise.get("confidence", 0.92)
+    
     recomendacoes = [
         "Continuar monitorizando nas próximas horas.",
         "Caso a alteração persista ou o comportamento mude drasticamente, considerar avaliação veterinária."
@@ -115,7 +117,7 @@ def analyze_measurement(data: MeasurementInput):
     return {
         "petId": data.petId,
         "status": status,
-        "confidence": 0.92,  
+        "confidence": confidence_real, 
         "summary": justificativa,
         "recommendations": recomendacoes
     }
