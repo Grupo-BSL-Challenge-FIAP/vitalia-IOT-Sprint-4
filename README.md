@@ -59,7 +59,7 @@ Desenvolver e implementar um modelo preditivo capaz de analisar dados de telemet
 Tutores de pets, clínicas veterinárias e plataformas integradas de gestão de saúde animal.
 
 ### 4. Dados Utilizados & Origem dos Dados
-* Dados de Treinamento: Registros históricos  simulados e normalizados de telemetria, peso, métricas de        atividade diária, padrão de sono e consumo de água.
+* Dados de Treinamento: Registros históricos  simulados e normalizados de telemetria, peso, métricas de        atividade diária, padrão de sono.
 
 * Dados em Runtime: Telemetria atual enviada pelas requisições da API em tempo de execução, cruzada com o histórico persistido do pet para análise diferencial.
 
@@ -220,21 +220,18 @@ A integração fi­sica e automatizada (ESP32 -> Oracle -> IA) representa a evol
 * **Ambiente de Execução**: Projeto configurado, executado e validado nativamente em **Python**.
 
 ### 18. Decision Tree
-* O algoritmo **Decision Tree** foi o modelo vencedor na avaliação comparativa (alcançando a métrica F1-Macro de 0.9035), superando os outros algoritmos candidatos (Logistic Regression, Random Forest, KNN e SVM) na classificação do estado de saúde dos pets.
+* O algoritmo **Decision Tree** foi o modelo vencedor na avaliação comparativa (alcançando a métrica F1-Macro de 98.40%), superando os outros algoritmos candidatos (Logistic Regression, Random Forest, KNN e SVM) na classificação do estado de saúde dos pets.
 
-### 19. Nota sobre a Avaliação de Regressão
-As métricas de avaliação de regressão (MAE, MSE, RMSE e \(R^2\)) calculadas no projeto representam o ajuste dos modelos ao histórico simulado do MVP.
-
-### 20. Distinção entre Classificação e Alteração Histórica
-* **Machine Learning**: Responsável por classificar o estado dos dados atuais (idade, peso atual, atividade atual, sono atual e água atual).
+### 19. Distinção entre Classificação e Alteração Histórica
+* **Machine Learning**: Responsável por classificar o estado dos dados atuais.
 * **AnalysisService**: Responsável por comparar o registro atual com o histórico individual, explicando eventuais variações em relação à evolução temporal do pet sem que pequenas oscilações configurem obrigatoriamente um erro de modelo.
 
-### 21. 📱 Prints da Aplicação
+### 20. 📱 Prints da Aplicação
 * 1. Interface Mobile / Telas do Aplicativo
 * 2. Secção de Alertas e Estados (Normal / Attention / Risk)
 * 3. Chat Interativo com o Assistente Gemini
 
-### 22. 🛠️ Tecnologias Utilizadas
+### 21. 🛠️ Tecnologias Utilizadas
 * 1. Linguagem: Python
 * 2. Framework Web: FastAPI
 * 3. Machine Learning: Scikit-Learn
