@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from api.main import app
 from api.security import verificar_autenticacao
+from api.exceptions import DatabaseConnectionError
 
 client = TestClient(app)
 
@@ -152,7 +153,7 @@ def test_analyze_cenarios_status(mock_pipeline, mock_pet_info, pred_val, probas,
     assert response.json()["status"] == esperado
 
 def test_analyze_banco_indisponivel():
-    with patch("api.services.history_service.HistoryService.obter_ultimo_registro", side_effect=Exception("Banco de dados temporariamente indisponível.")):
+    with patch("api.services.history_service.HistoryService.obter_ultimo_registro", side_effect=DatabaseConnectionError("Banco de dados temporariamente indisponível.")):
         payload = {
             "petId": 1,
             "activityLevel": 60.0,
@@ -162,5 +163,6 @@ def test_analyze_banco_indisponivel():
             "temperature": 38.2,
             "behaviorScore": 9.0
         }
-        with pytest.raises(Exception, match="Banco de dados temporariamente indisponível."):
-            client.post("/api/ai/analyze", json=payload)
+        response = client.post("/api/ai/analyze", json=payload)
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
