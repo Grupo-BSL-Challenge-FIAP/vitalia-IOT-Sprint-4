@@ -91,9 +91,10 @@ def test_confidence_real(mock_pipeline):
     assert response.json()["confidence"] == 0.90
 
 def test_banco_indisponivel():
-    with patch("api.services.history_service.HistoryService.obter_ultimo_registro", side_effect=Exception("Erro de conexão com o banco Oracle")):
-        with pytest.raises(Exception, match="Erro de conexão com o banco Oracle"):
-            client.get("/api/ai/pets/1/dashboard")
+    with patch("api.services.history_service.HistoryService.obter_ultimo_registro", side_effect=DatabaseConnectionError("Banco de dados temporariamente indisponível.")):
+        response = client.get("/api/ai/pets/1/dashboard")
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
 
 @patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.main.AnalysisService.analisar_comportamento")
