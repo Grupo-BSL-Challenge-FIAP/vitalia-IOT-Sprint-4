@@ -199,34 +199,6 @@ def test_analyze_erro_predict_503():
         response = client.post("/api/ai/analyze", json=payload)
         assert response.status_code == 503
 
-
-@patch("api.controllers.pet_controller.pipeline")
-@patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
-@patch("api.services.analysis_service.AnalysisService.analisar_comportamento")
-def test_java_analyze_payload_valido_200(mock_analisar, mock_history, mock_pipeline):
-    mock_pipeline.predict_proba.return_value = [[0.1, 0.8, 0.1]]
-    mock_analisar.return_value = {
-        "status": "ATTENTION",
-        "confidence": 0.80,
-        "justificativaNumerica": "Desvio detetado"
-    }
-
-    payload = {
-        "activityLevel": 50.0,
-        "sleepHours": 10.0,
-        "heartRate": 100.0,
-        "respiratoryRate": 25.0,
-        "temperature": 38.5,
-        "behaviorScore": 7.0
-    }
-
-    response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "status" in data
-    assert "confidence" in data
-    assert "recommendation" in data
-
 @patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.services.analysis_service.AnalysisService.analisar_comportamento")
 def test_java_analyze_payload_valido_200(mock_analisar, mock_history):
