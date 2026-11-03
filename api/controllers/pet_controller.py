@@ -1,18 +1,12 @@
 import pandas as pd
-import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.schemas.pet_schemas import (
-    PetDataInput
-)
 from api.exceptions import DatabaseConnectionError
 from api.services.analysis_service import AnalysisService
 from api.services.history_service import HistoryService
 from api.services.llm_service import llm_service
 from api.security import verificar_autenticacao
 from api.schemas.pet_schemas import PetDataInput, QuestionInput, MeasurementInput
-
-from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/ai/pets", tags=["Pets AI"])
      
