@@ -127,3 +127,41 @@ class AnalysisService:
             "alteracoes": alteracoes,
             "justificativaNumerica": justificativa_detalhada
         }
+
+    def prever(self, dados_pet):
+        if not self.pipeline:
+            logger.error("Pipeline de machine learning não está disponível.")
+            raise HTTPException(status_code=500, detail="Pipeline ML não carregado.")
+            
+        df_entrada = pd.DataFrame([{
+            "idade_anos": dados_pet.idade_anos,
+            "peso_kg": dados_pet.peso_kg,
+            "atividade_diaria_pct": dados_pet.atividade_diaria_pct,
+            "sono_horas": dados_pet.sono_horas,
+            "frequencia_cardiaca_bpm": dados_pet.frequencia_cardiaca_bpm,
+            "frequencia_respiratoria": dados_pet.frequencia_respiratoria,
+            "temperatura_c": dados_pet.temperatura_c,
+            "score_comportamento": dados_pet.score_comportamento
+        }])
+        
+        predicao = self.pipeline.predict(df_entrada)
+        raw_pred = predicao[0]
+        
+        text_to_id = {"NORMAL": 0, "ATTENTION": 1, "RISK": 2}
+        id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
+        
+        if isinstance(raw_pred, (int, np.integer)):
+            class_id = int(raw_pred)
+            status_text = id_to_text.get(class_id, "NORMAL")
+        else:
+            status_text = str(raw_pred).upper()
+            class_id = text_to_id.get(status_text, 0)
+        
+        confidence = 0.0
+        try:
+            probabilidades = self.pipeline.predict_proba(df_entrada)
+            confidence = float(np.max(probabilidades[0]))
+        except Exception:
+            confidence = 0.0
+            
+        return class_id, status_text, confidence
