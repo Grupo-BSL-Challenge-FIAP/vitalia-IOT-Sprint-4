@@ -42,3 +42,13 @@ class InsightOutput(BaseModel):
     
 class RecommendationInput(BaseModel):
     dados_atuais: PetDataInput
+
+
+class MeasurementInput(BaseModel):
+    petId: int
+    activityLevel: float = Field(..., ge=0.0, le=100.0)
+    sleepHours: float = Field(..., ge=0.0, le=24.0)
+    heartRate: float = Field(..., ge=10.0, le=300.0)
+    respiratoryRate: float = Field(..., ge=5.0, le=100.0)
+    temperature: float = Field(..., ge=30.0, le=45.0)
+    behaviorScore: float = Field(..., ge=0.0, le=10.0)

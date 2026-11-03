@@ -11,7 +11,7 @@ from api.services.analysis_service import AnalysisService
 from api.services.history_service import HistoryService
 from api.services.llm_service import llm_service
 from api.security import verificar_autenticacao
-from api.schemas.pet_schemas import PetDataInput, QuestionInput
+from api.schemas.pet_schemas import PetDataInput, QuestionInput, MeasurementInput
 
 from pydantic import BaseModel, Field
 
@@ -238,15 +238,6 @@ async def get_pet_trends(pet_id: str, credentials: str = Depends(verificar_auten
         },
         "detalhes": resultado.get("justificativaNumerica")
     }
-
-class MeasurementInput(BaseModel):
-    petId: int
-    activityLevel: float = Field(..., ge=0.0, le=100.0)
-    sleepHours: float = Field(..., ge=0.0, le=24.0)
-    heartRate: float = Field(..., ge=10.0, le=300.0)
-    respiratoryRate: float = Field(..., ge=5.0, le=100.0)
-    temperature: float = Field(..., ge=30.0, le=45.0)
-    behaviorScore: float = Field(..., ge=0.0, le=10.0)
 
 @router.post("/{pet_id}/measurements/analyze")
 async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials: str = Depends(verificar_autenticacao)):
