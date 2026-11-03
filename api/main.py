@@ -11,7 +11,7 @@ from api.services.analysis_service import AnalysisService
 from api.controllers.pet_controller import router as pet_router
 from api.security import verificar_autenticacao
 from api.exceptions import DatabaseConnectionError
-import joblib
+from api.schemas.pet_schemas import MeasurementInput
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -23,15 +23,6 @@ SECRET_KEY = os.getenv("API_SECRET_KEY")
 if not SECRET_KEY:
     logger.error("Tentativa de inicialização sem API_SECRET_KEY definida.")
     raise RuntimeError("API_SECRET_KEY não definida nas variáveis de ambiente.")
-
-class MeasurementInput(BaseModel):
-    petId: int
-    activityLevel: float = Field(..., ge=0.0, le=100.0, description="Percentual de atividade entre 0 e 100")
-    sleepHours: float = Field(..., ge=0.0, le=24.0, description="Horas de sono entre 0 e 24")
-    heartRate: float = Field(..., ge=10.0, le=300.0, description="Frequência cardíaca em BPM")
-    respiratoryRate: float = Field(..., ge=5.0, le=100.0, description="Frequência respiratória")
-    temperature: float = Field(..., ge=30.0, le=45.0, description="Temperatura corporal em Celsius")
-    behaviorScore: float = Field(..., ge=0.0, le=10.0, description="Score de comportamento de 0 a 10")
 
 class AIAnalysisResponse(BaseModel):
     petId: int

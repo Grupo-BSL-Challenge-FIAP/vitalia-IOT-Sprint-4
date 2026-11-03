@@ -1,6 +1,15 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
+class MeasurementInput(BaseModel):
+    petId: int
+    activityLevel: float = Field(...)
+    sleepHours: float = Field(...)
+    heartRate: float = Field(...)
+    respiratoryRate: float = Field(...)
+    temperature: float = Field(...)
+    behaviorScore: float = Field(...)
+
 class PetDataInput(BaseModel):
     idade_anos: float = Field(ge=0, le=40)
     peso_kg: float = Field(gt=0)
@@ -42,13 +51,3 @@ class InsightOutput(BaseModel):
     
 class RecommendationInput(BaseModel):
     dados_atuais: PetDataInput
-
-
-class MeasurementInput(BaseModel):
-    petId: int
-    activityLevel: float = Field(..., ge=0.0, le=100.0)
-    sleepHours: float = Field(..., ge=0.0, le=24.0)
-    heartRate: float = Field(..., ge=10.0, le=300.0)
-    respiratoryRate: float = Field(..., ge=5.0, le=100.0)
-    temperature: float = Field(..., ge=30.0, le=45.0)
-    behaviorScore: float = Field(..., ge=0.0, le=10.0)
