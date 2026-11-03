@@ -23,7 +23,7 @@ class PetRepository:
 
     def obter_informacoes_pet(self, pet_id: int):
         query = """
-            SELECT p.PET_ID, p.NAME, p.BIRTH_DATE, p.BREED_ID, p.WEIGHT_KG, p.SEX, p.STATUS, s.SPECIES_NAME
+            SELECT p.PET_ID, p.NAME, p.BIRTH_DATE, p.BREED_ID, p.WEIGHT_KG, p.SEX, p.STATUS, s.NAME AS SPECIES_NAME
             FROM TB_VITALIA_PET p
             LEFT JOIN TB_VITALIA_BREED b ON p.BREED_ID = b.BREED_ID
             LEFT JOIN TB_VITALIA_SPECIES s ON b.SPECIES_ID = s.SPECIES_ID
