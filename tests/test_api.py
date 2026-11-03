@@ -96,9 +96,8 @@ def test_banco_indisponivel():
         assert response.status_code == 503
         assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
 
-@patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.main.AnalysisService.analisar_comportamento")
-def test_analyze_payload_valido_200(mock_analisar, mock_history):
+def test_analyze_payload_valido_200(mock_analisar):
     mock_analisar.return_value = {
         "petId": 1,
         "status": "NORMAL",
@@ -133,14 +132,13 @@ def test_analyze_payload_invalido_422():
     response = client.post("/api/ai/analyze", json=payload)
     assert response.status_code == 422
 
-@patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.main.AnalysisService.analisar_comportamento")
 @pytest.mark.parametrize("status_retorno, probas, esperado", [
     ("NORMAL", [[0.85, 0.10, 0.05]], "NORMAL"),
     ("ATTENTION", [[0.10, 0.80, 0.10]], "ATTENTION"),
     ("RISK", [[0.05, 0.05, 0.90]], "RISK")
 ])
-def test_analyze_cenarios_status(mock_analisar, mock_history, status_retorno, probas, esperado):
+def test_analyze_cenarios_status(mock_analisar, status_retorno, probas, esperado):
     mock_analisar.return_value = {
         "petId": 1,
         "status": esperado,
@@ -162,3 +160,47 @@ def test_analyze_cenarios_status(mock_analisar, mock_history, status_retorno, pr
     response = client.post("/api/ai/analyze", json=payload)
     assert response.status_code == 200
     assert response.json()["status"] == esperado
+
+@patch("api.main.AnalysisService.analisar_comportamento", return_value=None)
+def test_analyze_pet_inexistente_404(mock_analisar):
+    payload = {
+        "petId": 9999,
+        "activityLevel": 60.0,
+        "sleepHours": 12.0,
+        "heartRate": 95.0,
+        "respiratoryRate": 22.0,
+        "temperature": 38.2,
+        "behaviorScore": 9.0
+    }
+    response = client.post("/api/ai/analyze", json=payload)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Pet não encontrado no histórico ou base indisponível."
+
+def test_analyze_banco_indisponivel_503():
+    with patch("api.main.AnalysisService.analisar_comportamento", side_effect=DatabaseConnectionError("Banco de dados temporariamente indisponível.")):
+        payload = {
+            "petId": 1,
+            "activityLevel": 60.0,
+            "sleepHours": 12.0,
+            "heartRate": 95.0,
+            "respiratoryRate": 22.0,
+            "temperature": 38.2,
+            "behaviorScore": 9.0
+        }
+        response = client.post("/api/ai/analyze", json=payload)
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
+
+def test_analyze_erro_predict_503():
+    with patch("api.main.AnalysisService.analisar_comportamento", side_effect=Exception("Erro crítico no modelo")):
+        payload = {
+            "petId": 1,
+            "activityLevel": 60.0,
+            "sleepHours": 12.0,
+            "heartRate": 95.0,
+            "respiratoryRate": 22.0,
+            "temperature": 38.2,
+            "behaviorScore": 9.0
+        }
+        response = client.post("/api/ai/analyze", json=payload)
+        assert response.status_code == 503
