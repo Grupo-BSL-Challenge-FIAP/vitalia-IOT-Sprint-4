@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.schemas.pet_schemas import (
     PetDataInput
 )
+from api.exceptions import DatabaseConnectionError
 from api.services.analysis_service import AnalysisService
 from api.services.history_service import HistoryService
 from api.services.llm_service import llm_service
@@ -198,41 +199,43 @@ async def get_pet_trends(pet_id: str, credentials: str = Depends(verificar_auten
         "detalhes": resultado.get("justificativaNumerica")
     }
 
-@router.post("/{pet_id}/measurements/analyze")
-async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials: str = Depends(verificar_autenticacao)):
-    try:
-        pid_int = int(pet_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID do pet inválido.")
-
-    if data.petId != pid_int:
-        raise HTTPException(status_code=400, detail="O ID do pet na URL não corresponde ao ID do payload.")
-
-    payload = {
-        "activityLevel": data.activityLevel,
-        "sleepHours": data.sleepHours,
-        "heartRate": data.heartRate,
-        "respiratoryRate": data.respiratoryRate,
-        "temperature": data.temperature,
-        "behaviorScore": data.behaviorScore
-    }
-
-    resultado = analysis_service.analisar_comportamento(pid_int, payload)
+@router.post("/{petId}/measurements/analyze")
+def analisar_medicao_pet(petId: int, payload: MeasurementInput, credentials: str = Depends(verificar_autenticacao)):
+    if payload.petId != petId:
+        raise HTTPException(
+            status_code=400,
+            detail="O ID do pet na URL não corresponde ao ID do payload."
+        )
     
-    if not resultado:
-        raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
+    try:
+        ultimo = history_service.obter_ultimo_registro(petId)
+        if not ultimo:
+            raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
 
-    status_text = resultado["status"]
-    confidence = resultado["confidence"]
+        resultado = analysis_service.analisar_comportamento(petId, payload.model_dump())
+        
+        if not resultado:
+            raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
 
-    recomendacao = "Acompanhe as alterações nas próximas horas."
-    if status_text == "RISK":
-        recomendacao = "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico. Considerar avaliação veterinária."
-    elif status_text == "ATTENTION":
-        recomendacao = "Acompanhe as alterações identificadas nas próximas horas."
+        status = resultado.get("status", "NORMAL")
+        
+        if status == "RISK":
+            recomendacao = "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico. Considerar avaliação veterinária."
+        elif status == "ATTENTION":
+            recomendacao = "Acompanhe as alterações identificadas nas próximas horas."
+        else:
+            recomendacao = "Acompanhe as alterações nas próximas horas."
 
-    return {
-        "status": status_text,
-        "confidence": confidence,
-        "recommendation": recomendacao
-    }
+        return {
+            "petId": petId,
+            "status": status,
+            "confidence": resultado.get("confidence", 0.90),
+            "recommendation": recomendacao,
+            "summary": resultado.get("justificativaNumerica", "Análise realizada com sucesso.")
+        }
+    except DatabaseConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")

@@ -199,13 +199,22 @@ def test_analyze_erro_predict_503():
         response = client.post("/api/ai/analyze", json=payload)
         assert response.status_code == 503
 
+from fastapi import HTTPException
+
+# --- P0.9: COBERTURA COMPLETA DO ENDPOINT JAVA ---
+
+@pytest.mark.parametrize("status_retorno, confidence_retorno, recomendacao_esperada", [
+    ("NORMAL", 0.95, "Acompanhe as alterações nas próximas horas."),
+    ("ATTENTION", 0.80, "Acompanhe as alterações identificadas nas próximas horas."),
+    ("RISK", 0.90, "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico. Considerar avaliação veterinária.")
+])
 @patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.services.analysis_service.AnalysisService.analisar_comportamento")
-def test_java_analyze_payload_valido_200(mock_analisar, mock_history):
+def test_java_analyze_status_cenarios(mock_analisar, mock_history, status_retorno, confidence_retorno, recomendacao_esperada):
     mock_analisar.return_value = {
-        "status": "ATTENTION",
-        "confidence": 0.80,
-        "justificativaNumerica": "Desvio detetado"
+        "status": status_retorno,
+        "confidence": confidence_retorno,
+        "justificativaNumerica": "Teste de cenário"
     }
 
     payload = {
@@ -221,13 +230,14 @@ def test_java_analyze_payload_valido_200(mock_analisar, mock_history):
     response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert "status" in data
-    assert "confidence" in data
-    assert "recommendation" in data
+    assert data["status"] == status_retorno
+    assert 0.0 <= data["confidence"] <= 1.0
+    assert data["recommendation"] == recomendacao_esperada
 
-def test_java_analyze_pet_id_diferente():
+@patch("api.services.analysis_service.AnalysisService.analisar_comportamento", return_value=None)
+def test_java_analyze_pet_inexistente_404(mock_analisar):
     payload = {
-        "petId": 2,
+        "petId": 9999,
         "activityLevel": 50.0,
         "sleepHours": 10.0,
         "heartRate": 100.0,
@@ -235,13 +245,40 @@ def test_java_analyze_pet_id_diferente():
         "temperature": 38.5,
         "behaviorScore": 7.0
     }
-    response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
-    assert response.status_code == 400
-    assert response.json()["detail"] == "O ID do pet na URL não corresponde ao ID do payload."
+    response = client.post("/api/ai/pets/9999/measurements/analyze", json=payload)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Pet não encontrado no histórico ou base indisponível."
 
-from fastapi import HTTPException
+def test_java_analyze_banco_indisponivel_503():
+    with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=DatabaseConnectionError("Banco de dados temporariamente indisponível.")):
+        payload = {
+            "petId": 1,
+            "activityLevel": 50.0,
+            "sleepHours": 10.0,
+            "heartRate": 100.0,
+            "respiratoryRate": 25.0,
+            "temperature": 38.5,
+            "behaviorScore": 7.0
+        }
+        response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
 
-def test_java_analyze_pipeline_indisponivel():
+def test_java_analyze_erro_modelo_503():
+    with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=Exception("Erro crítico no modelo")):
+        payload = {
+            "petId": 1,
+            "activityLevel": 50.0,
+            "sleepHours": 10.0,
+            "heartRate": 100.0,
+            "respiratoryRate": 25.0,
+            "temperature": 38.5,
+            "behaviorScore": 7.0
+        }
+        response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
+        assert response.status_code == 503
+
+def test_java_analyze_pipeline_indisponivel_503():
     with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")):
         payload = {
             "petId": 1,
@@ -255,3 +292,32 @@ def test_java_analyze_pipeline_indisponivel():
         response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
         assert response.status_code == 503
         assert response.json()["detail"] == "Serviço de IA temporariamente indisponível."
+
+def test_java_analyze_pet_id_diferente_400():
+    payload = {
+        "petId": 2,
+        "activityLevel": 50.0,
+        "sleepHours": 10.0,
+        "heartRate": 100.0,
+        "respiratoryRate": 25.0,
+        "temperature": 38.5,
+        "behaviorScore": 7.0
+    }
+    response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "O ID do pet na URL não corresponde ao ID do payload."
+
+def test_java_analyze_sem_autenticacao():
+    app.dependency_overrides.clear()
+    payload = {
+        "petId": 1,
+        "activityLevel": 50.0,
+        "sleepHours": 10.0,
+        "heartRate": 100.0,
+        "respiratoryRate": 25.0,
+        "temperature": 38.5,
+        "behaviorScore": 7.0
+    }
+    response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
+    assert response.status_code in [401, 403]
+    app.dependency_overrides[verificar_autenticacao] = lambda: "mock_user"
