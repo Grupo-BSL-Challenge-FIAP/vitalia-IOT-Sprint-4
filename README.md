@@ -79,9 +79,9 @@ A matriz de confusão valida a capacidade de classificação correta nas três c
 
 | Actual \ Predicted | NORMAL | ATTENTION | RISK |
 | :--- | :---: | :---: | :---: |
-| **NORMAL** | X | 0 | 0 |
-| **ATTENTION** | 0 | Y | 0 |
-| **RISK** | 0 | 0 | Z |
+| **NORMAL** | 166 | 0 | 0 |
+| **ATTENTION** | 0 | 107 | 0 |
+| **RISK** | 0 | 1 | 11 |
 
 ⚠️ Aviso sobre os Resultados: Os resultados representam somente o desempenho sobre o dataset sintético utilizado para validação técnica do MVP e não representam validação clínica ou desempenho em animais reais.
 
@@ -132,6 +132,19 @@ graph TD
 
 * `GET /api/ai/pets/{pet_id}/trends` — Retorna tendências temporais e médias históricas.
 
+* `POST /api/ai/analyze` — Retorna tendências temporais e médias históricas.
+
+⚠️ Aviso: Endpoint utilizado pelo backend Java
+
+* `POST /api/ai/pets/{petId}/measurements/analyze` — Retorna tendências temporais e médias históricas.
+
+```JSON
+{
+  "status": "ATTENTION",
+  "confidence": 0.91,
+  "recommendation": "..."
+}
+```
 
 ### 12. Instalação, Execução & Testes
 
