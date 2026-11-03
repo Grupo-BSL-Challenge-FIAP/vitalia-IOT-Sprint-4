@@ -62,3 +62,51 @@ def test_calcular_medias_historicas(history_service, mock_repository):
     assert "mediaSonoHoras" in medias
     assert "mediaTemperaturaC" in medias
     assert medias["mediaAtividadePct"] == 50.0
+
+def test_calcular_medias_todas_as_metricas(history_service, mock_repository):
+    mock_repository.obter_historico_medicoes.return_value = [
+        {
+            "activity_level": 50.0,
+            "sleep_hours": 12.0,
+            "temperature_c": 38.2,
+            "heart_rate_bpm": 95.0,
+            "respiratory_rate": 22.0,
+            "behavior_score": 9.0
+        }
+    ]
+
+    medias = history_service.calcular_medias_historicas(1)
+    
+    assert medias["mediaAtividadePct"] == 50.0
+    assert medias["mediaSonoHoras"] == 12.0
+    assert medias["mediaTemperaturaC"] == 38.2
+
+def test_obter_ultimo_registro_peso_inexistente(history_service, mock_repository):
+    mock_repository.obter_informacoes_pet.return_value = {
+        "pet_id": 1,
+        "birth_date": "2023-01-01",
+        "weight_kg": None 
+    }
+    mock_repository.obter_historico_medicoes.return_value = [{
+        "measurement_date": "2026-10-01",
+        "activity_level": 60.0, "sleep_hours": 10.0, "heart_rate_bpm": 95.0,
+        "respiratory_rate": 22.0, "temperature_c": 38.2, "behavior_score": 9.0
+    }]
+
+    with pytest.raises(ValueError, match="Peso real"):
+        history_service.obter_ultimo_registro(1)
+
+def test_obter_ultimo_registro_data_nascimento_invalida(history_service, mock_repository):
+    mock_repository.obter_informacoes_pet.return_value = {
+        "pet_id": 1,
+        "birth_date": "data_corrompida_ou_invalida",
+        "weight_kg": 12.5
+    }
+    mock_repository.obter_historico_medicoes.return_value = [{
+        "measurement_date": "2026-10-01",
+        "activity_level": 60.0, "sleep_hours": 10.0, "heart_rate_bpm": 95.0,
+        "respiratory_rate": 22.0, "temperature_c": 38.2, "behavior_score": 9.0
+    }]
+
+    with pytest.raises(ValueError, match="Erro ao processar a data de nascimento"):
+        history_service.obter_ultimo_registro(1)
