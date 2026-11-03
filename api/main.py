@@ -102,10 +102,22 @@ def analyze_measurement(data: MeasurementInput):
     status_text = "NORMAL"
     confidence = 0.85
 
+    idade_real = 3.0
+    peso_real = 12.5
+    try:
+        from api.services.history_service import HistoryService
+        history_svc = HistoryService()
+        ultimo = history_svc.obter_ultimo_registro(data.petId)
+        if ultimo:
+            idade_real = float(ultimo.get("idadeAnos", 3.0))
+            peso_real = float(ultimo.get("pesoKg", 12.5))
+    except Exception as e:
+        logger.warning(f"Não foi possível obter idade e peso reais do histórico: {e}")
+
     if pet_controller.pipeline:
         df_entrada = pd.DataFrame([{
-            "idade_anos": 3.0, 
-            "peso_kg": 12.5,
+            "idade_anos": idade_real, 
+            "peso_kg": peso_real,
             "atividade_diaria_pct": data.activityLevel,
             "sono_horas": data.sleepHours,
             "frequencia_cardiaca_bpm": data.heartRate,
