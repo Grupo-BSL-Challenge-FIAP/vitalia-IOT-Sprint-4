@@ -1,4 +1,5 @@
 import os
+import logging
 from dotenv import load_dotenv
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -11,17 +12,20 @@ from api.services.analysis_service import AnalysisService
 from api.controllers.pet_controller import router as pet_router, pipeline
 from api.security import verificar_autenticacao
 from api.exceptions import DatabaseConnectionError
-from fastapi import FastAPI, Request
 import joblib
 import pandas as pd
 import numpy as np
 from api.controllers import pet_controller
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 ENV = os.getenv("APP_ENV", "development")
 SECRET_KEY = os.getenv("API_SECRET_KEY")
 if not SECRET_KEY:
+    logger.error("Tentativa de inicialização sem API_SECRET_KEY definida.")
     raise RuntimeError("API_SECRET_KEY não definida nas variáveis de ambiente.")
 
 class MeasurementInput(BaseModel):
@@ -86,7 +90,9 @@ async def json_decode_exception_handler(request: Request, exc: JSONDecodeError):
 PIPELINE_PATH = os.path.join(os.path.dirname(__file__), '../models/trained/vitalia_pipeline.pkl')
 try:
     pipeline = joblib.load(PIPELINE_PATH)
-except Exception:
+    logger.info("Pipeline de Machine Learning carregado com sucesso.")
+except Exception as e:
+    logger.warning(f"Não foi possível carregar o pipeline de ML: {e}")
     pipeline = None
 
 analysis_service = AnalysisService()
@@ -119,8 +125,8 @@ def analyze_measurement(data: MeasurementInput):
 
             probabilidades = pet_controller.pipeline.predict_proba(df_entrada)
             confidence = float(np.max(probabilidades[0]))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Erro durante a predição do modelo: {e}")
 
     try:
         from api.services.history_service import HistoryService
@@ -128,6 +134,7 @@ def analyze_measurement(data: MeasurementInput):
         history_svc.obter_ultimo_registro(data.petId)
     except Exception as e:
         if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
+            logger.error(f"Erro de conexão com o banco de dados: {e}")
             raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
         raise e
 
@@ -157,6 +164,7 @@ def health_check():
 
 @app.exception_handler(DatabaseConnectionError)
 async def database_connection_exception_handler(request: Request, exc: DatabaseConnectionError):
+    logger.error(f"DatabaseConnectionError capturado: {exc}")
     return JSONResponse(
         status_code=503,
         content={"detail": "Banco de dados temporariamente indisponível."},
