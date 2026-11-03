@@ -250,41 +250,27 @@ class MeasurementInput(BaseModel):
 
 @router.post("/{pet_id}/measurements/analyze")
 async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials: str = Depends(verificar_autenticacao)):
-    status_text = "NORMAL"
-    confidence = 0.85
-
-    if pipeline:
-        df_entrada = pd.DataFrame([{
-            "idade_anos": 3.0, 
-            "peso_kg": 12.5,
-            "atividade_diaria_pct": data.activityLevel,
-            "sono_horas": data.sleepHours,
-            "frequencia_cardiaca_bpm": data.heartRate,
-            "frequencia_respiratoria": data.respiratoryRate,
-            "temperatura_c": data.temperature,
-            "score_comportamento": data.behaviorScore
-        }])
-        try:
-            predicao = pipeline.predict(df_entrada)
-            raw_pred = predicao[0]
-            id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
-            
-            if isinstance(raw_pred, (int, np.integer)):
-                status_text = id_to_text.get(int(raw_pred), "NORMAL")
-            else:
-                status_text = str(raw_pred).upper()
-
-            probabilidades = pipeline.predict_proba(df_entrada)
-            confidence = float(np.max(probabilidades[0]))
-        except Exception:
-            pass
-
     try:
         pid_int = int(pet_id)
-        history_service.obter_ultimo_registro(pid_int)
-    except Exception as e:
-        if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
-            raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID do pet inválido.")
+
+    payload = {
+        "activityLevel": data.activityLevel,
+        "sleepHours": data.sleepHours,
+        "heartRate": data.heartRate,
+        "respiratoryRate": data.respiratoryRate,
+        "temperature": data.temperature,
+        "behaviorScore": data.behaviorScore
+    }
+
+    resultado = analysis_service.analisar_comportamento(pid_int, payload)
+    
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
+
+    status_text = resultado["status"]
+    confidence = resultado.get("confidence", 0.85)
 
     recomendacao = "Acompanhe as alterações nas próximas horas."
     if status_text == "RISK":
@@ -294,6 +280,6 @@ async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials:
 
     return {
         "status": status_text,
-        "confidence": round(confidence, 2),
+        "confidence": confidence,
         "recommendation": recomendacao
     }

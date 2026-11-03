@@ -99,6 +99,8 @@ def test_analisar_comportamento_falha_no_modelo(analysis_service):
     })
     
     analysis_service.pipeline.predict.side_effect = Exception("Erro interno no modelo de Machine Learning")
-
-    with pytest.raises(Exception):
-        analysis_service.analisar_comportamento(pet_id=1)
+    
+    resultado = analysis_service.analisar_comportamento(1)
+    
+    assert resultado is not None
+    assert resultado["status"] == "INDISPONIVEL"

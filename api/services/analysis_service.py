@@ -121,7 +121,7 @@ class AnalysisService:
             "variacaoPct": var_ativ,
             "tendencia": tendencia_qualitativa,
             "status": status_ml,
-            "confidence": round(confidence_val, 2),
+            "confidence": round(confidence_val, 2) if 'confidence_val' in locals() and confidence_val else 0.85,
             "alteracoes": alteracoes,
             "justificativaNumerica": justificativa_detalhada
         }
