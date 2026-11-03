@@ -9,11 +9,8 @@ client = TestClient(app)
 
 app.dependency_overrides[verificar_autenticacao] = lambda: "mock_user"
 
-@patch("api.controllers.pet_controller.pipeline")
-def test_predict_payload_valido_200(mock_pipeline):
-    mock_pipeline.predict.return_value = [0]
-    mock_pipeline.predict_proba.return_value = [[0.8, 0.1, 0.1]]
-
+@patch("api.services.analysis_service.AnalysisService.prever", return_value=(0, "NORMAL", 0.8))
+def test_predict_payload_valido_200(mock_prever):
     payload = {
         "idade_anos": 3.0,
         "peso_kg": 12.5,
@@ -75,11 +72,8 @@ def test_cenarios_status_ml(mock_analisar):
     assert response.status_code == 200
     assert response.json()["status_geral"] == "RISK"
 
-@patch("api.controllers.pet_controller.pipeline")
-def test_confidence_real(mock_pipeline):
-    mock_pipeline.predict.return_value = [2]
-    mock_pipeline.predict_proba.return_value = [[0.05, 0.05, 0.90]]
-
+@patch("api.services.analysis_service.AnalysisService.prever", return_value=(2, "RISK", 0.90))
+def test_confidence_real(mock_prever):
     payload = {
         "idade_anos": 5.0, "peso_kg": 20.0, "atividade_diaria_pct": 10.0,
         "sono_horas": 6.0, "frequencia_cardiaca_bpm": 140.0,
@@ -233,11 +227,9 @@ def test_java_analyze_payload_valido_200(mock_analisar, mock_history, mock_pipel
     assert "confidence" in data
     assert "recommendation" in data
 
-@patch("api.controllers.pet_controller.pipeline")
 @patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
 @patch("api.services.analysis_service.AnalysisService.analisar_comportamento")
-def test_java_analyze_payload_valido_200(mock_analisar, mock_history, mock_pipeline):
-    mock_pipeline.predict_proba.return_value = [[0.1, 0.8, 0.1]]
+def test_java_analyze_payload_valido_200(mock_analisar, mock_history):
     mock_analisar.return_value = {
         "status": "ATTENTION",
         "confidence": 0.80,
@@ -255,13 +247,15 @@ def test_java_analyze_payload_valido_200(mock_analisar, mock_history, mock_pipel
     }
 
     response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
-    if response.status_code == 422:
-        print("\nERRO 422 DETALHADO:", response.json())
     assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "confidence" in data
+    assert "recommendation" in data
 
 def test_java_analyze_pet_id_diferente():
     payload = {
-        "petId": 2,  # Diferente do ID 1 da URL
+        "petId": 2,
         "activityLevel": 50.0,
         "sleepHours": 10.0,
         "heartRate": 100.0,

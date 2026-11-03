@@ -9,13 +9,12 @@ from typing import List
 from fastapi import FastAPI, Depends, Request, HTTPException
 from api.services.analysis_service import AnalysisService
 
-from api.controllers.pet_controller import router as pet_router, pipeline
+from api.controllers.pet_controller import router as pet_router
 from api.security import verificar_autenticacao
 from api.exceptions import DatabaseConnectionError
 import joblib
 import pandas as pd
 import numpy as np
-from api.controllers import pet_controller
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
