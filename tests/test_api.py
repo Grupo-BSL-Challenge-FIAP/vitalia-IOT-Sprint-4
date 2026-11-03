@@ -236,7 +236,8 @@ def test_java_analyze_pet_id_diferente():
         "behaviorScore": 7.0
     }
     response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
-    assert response.status_code in [400, 422]
+    assert response.status_code == 400
+    assert response.json()["detail"] == "O ID do pet na URL não corresponde ao ID do payload."
 
 def test_java_analyze_pipeline_indisponivel():
     with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=DatabaseConnectionError("Pipeline indisponível")):
