@@ -99,61 +99,32 @@ analysis_service = AnalysisService()
 
 @app.post("/api/ai/analyze", response_model=AIAnalysisResponse)
 def analyze_measurement(data: MeasurementInput):
-    if not pet_controller.pipeline:
-        logger.error("Tentativa de análise sem o pipeline de Machine Learning carregado.")
-        raise HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")
-
-    idade_real = 3.0
-    peso_real = 12.5
-    try:
-        from api.services.history_service import HistoryService
-        history_svc = HistoryService()
-        ultimo = history_svc.obter_ultimo_registro(data.petId)
-        if ultimo:
-            idade_real = float(ultimo.get("idadeAnos", 3.0))
-            peso_real = float(ultimo.get("pesoKg", 12.5))
-    except Exception as e:
-        logger.warning(f"Não foi possível obter idade e peso reais do histórico: {e}")
-
-    df_entrada = pd.DataFrame([{
-        "idade_anos": idade_real, 
-        "peso_kg": peso_real,
-        "atividade_diaria_pct": data.activityLevel,
-        "sono_horas": data.sleepHours,
-        "frequencia_cardiaca_bpm": data.heartRate,
-        "frequencia_respiratoria": data.respiratoryRate,
-        "temperatura_c": data.temperature,
-        "score_comportamento": data.behaviorScore
-    }])
-    
-    try:
-        predicao = pet_controller.pipeline.predict(df_entrada)
-        raw_pred = predicao[0]
-        id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
-        
-        if isinstance(raw_pred, (int, np.integer)):
-            status_text = id_to_text.get(int(raw_pred), "NORMAL")
-        else:
-            status_text = str(raw_pred).upper()
-
-        probabilidades = pet_controller.pipeline.predict_proba(df_entrada)
-        confidence = float(np.max(probabilidades[0]))
-    except Exception as e:
-        logger.error(f"Erro durante a predição do modelo: {e}")
-        raise HTTPException(status_code=503, detail="Erro durante a execução do modelo de IA.")
+    payload = {
+        "activityLevel": data.activityLevel,
+        "sleepHours": data.sleepHours,
+        "heartRate": data.heartRate,
+        "respiratoryRate": data.respiratoryRate,
+        "temperature": data.temperature,
+        "behaviorScore": data.behaviorScore
+    }
 
     try:
-        from api.services.history_service import HistoryService
-        history_svc = HistoryService()
-        history_svc.obter_ultimo_registro(data.petId)
+        resultado = analysis_service.analisar_comportamento(data.petId, payload)
+    except HTTPException as he:
+        raise he
     except Exception as e:
         if "conexão" in str(e).lower() or "database" in str(e).lower() or "oracle" in str(e).lower():
             logger.error(f"Erro de conexão com o banco de dados: {e}")
             raise HTTPException(status_code=503, detail="Banco de dados temporariamente indisponível.")
-        raise e
+        raise HTTPException(status_code=503, detail=str(e))
 
-    justificativa = "Análise efetuada com base na nova medição e histórico recente do pet."
-    
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
+
+    status_text = resultado.get("status", "NORMAL")
+    confidence = resultado.get("confidence", 0.85)
+    justificativa = resultado.get("justificativaNumerica", "Análise efetuada com base na medição e histórico.")
+
     recomendacoes = [
         "Continuar monitorizando nas próximas horas.",
         "Caso a alteração persista ou o comportamento mude drasticamente, considerar avaliação veterinária."
@@ -164,7 +135,7 @@ def analyze_measurement(data: MeasurementInput):
     return {
         "petId": data.petId,
         "status": status_text,
-        "confidence": round(confidence, 2), 
+        "confidence": round(float(confidence), 2),
         "summary": justificativa,
         "recommendations": recomendacoes
     }

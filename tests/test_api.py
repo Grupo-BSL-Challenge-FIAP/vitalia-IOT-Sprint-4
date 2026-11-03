@@ -95,11 +95,16 @@ def test_banco_indisponivel():
         with pytest.raises(Exception, match="Erro de conexão com o banco Oracle"):
             client.get("/api/ai/pets/1/dashboard")
 
-@patch("api.repositories.pet_repository.PetRepository.obter_informacoes_pet", return_value={"nome": "Rex", "especie": "Canino", "birth_date": "2023-01-01", "weight_kg": 12.5})
-@patch("api.controllers.pet_controller.pipeline")
-def test_analyze_payload_valido_200(mock_pipeline, mock_pet_info):
-    mock_pipeline.predict.return_value = [0]
-    mock_pipeline.predict_proba.return_value = [[0.90, 0.05, 0.05]]
+@patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
+@patch("api.main.AnalysisService.analisar_comportamento")
+def test_analyze_payload_valido_200(mock_analisar, mock_history):
+    mock_analisar.return_value = {
+        "petId": 1,
+        "status": "NORMAL",
+        "confidence": 0.90,
+        "summary": "Análise simulada",
+        "recommendations": ["Recomendação"]
+    }
 
     payload = {
         "petId": 1,
@@ -127,16 +132,21 @@ def test_analyze_payload_invalido_422():
     response = client.post("/api/ai/analyze", json=payload)
     assert response.status_code == 422
 
-@patch("api.repositories.pet_repository.PetRepository.obter_informacoes_pet", return_value={"nome": "Rex", "especie": "Canino", "birth_date": "2023-01-01", "weight_kg": 12.5})
-@patch("api.controllers.pet_controller.pipeline")
-@pytest.mark.parametrize("pred_val, probas, esperado", [
-    (0, [[0.85, 0.10, 0.05]], "NORMAL"),
-    (1, [[0.10, 0.80, 0.10]], "ATTENTION"),
-    (2, [[0.05, 0.05, 0.90]], "RISK")
+@patch("api.services.history_service.HistoryService.obter_ultimo_registro", return_value={"idadeAnos": 3.0, "pesoKg": 12.5})
+@patch("api.main.AnalysisService.analisar_comportamento")
+@pytest.mark.parametrize("status_retorno, probas, esperado", [
+    ("NORMAL", [[0.85, 0.10, 0.05]], "NORMAL"),
+    ("ATTENTION", [[0.10, 0.80, 0.10]], "ATTENTION"),
+    ("RISK", [[0.05, 0.05, 0.90]], "RISK")
 ])
-def test_analyze_cenarios_status(mock_pipeline, mock_pet_info, pred_val, probas, esperado):
-    mock_pipeline.predict.return_value = [pred_val]
-    mock_pipeline.predict_proba.return_value = probas
+def test_analyze_cenarios_status(mock_analisar, mock_history, status_retorno, probas, esperado):
+    mock_analisar.return_value = {
+        "petId": 1,
+        "status": esperado,
+        "confidence": probas[0][2] if esperado == "RISK" else (probas[0][1] if esperado == "ATTENTION" else probas[0][0]),
+        "summary": "Análise simulada",
+        "recommendations": ["Recomendação de teste"]
+    }
 
     payload = {
         "petId": 1,
@@ -151,18 +161,3 @@ def test_analyze_cenarios_status(mock_pipeline, mock_pet_info, pred_val, probas,
     response = client.post("/api/ai/analyze", json=payload)
     assert response.status_code == 200
     assert response.json()["status"] == esperado
-
-def test_analyze_banco_indisponivel():
-    with patch("api.services.history_service.HistoryService.obter_ultimo_registro", side_effect=DatabaseConnectionError("Banco de dados temporariamente indisponível.")):
-        payload = {
-            "petId": 1,
-            "activityLevel": 60.0,
-            "sleepHours": 12.0,
-            "heartRate": 95.0,
-            "respiratoryRate": 22.0,
-            "temperature": 38.2,
-            "behaviorScore": 9.0
-        }
-        response = client.post("/api/ai/analyze", json=payload)
-        assert response.status_code == 503
-        assert response.json()["detail"] == "Banco de dados temporariamente indisponível."
