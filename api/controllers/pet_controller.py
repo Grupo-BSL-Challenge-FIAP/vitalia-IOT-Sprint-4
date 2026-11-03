@@ -255,6 +255,9 @@ async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials:
     except ValueError:
         raise HTTPException(status_code=400, detail="ID do pet inválido.")
 
+    if data.petId != pid_int:
+        raise HTTPException(status_code=400, detail="O ID do pet na URL não corresponde ao ID do payload.")
+
     payload = {
         "activityLevel": data.activityLevel,
         "sleepHours": data.sleepHours,
