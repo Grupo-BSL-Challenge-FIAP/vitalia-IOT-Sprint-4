@@ -1,6 +1,7 @@
 ﻿import joblib
 import os
 import pandas as pd
+import numpy as np
 from api.services.history_service import HistoryService
 import logging
 from fastapi import HTTPException
@@ -131,7 +132,10 @@ class AnalysisService:
     def prever(self, dados_pet):
         if not self.pipeline:
             logger.error("Pipeline de machine learning não está disponível.")
-            raise HTTPException(status_code=500, detail="Pipeline ML não carregado.")
+            raise HTTPException(
+                status_code=503, 
+                detail="Serviço de IA temporariamente indisponível."
+            )
             
         df_entrada = pd.DataFrame([{
             "idade_anos": dados_pet.idade_anos,
@@ -144,24 +148,45 @@ class AnalysisService:
             "score_comportamento": dados_pet.score_comportamento
         }])
         
-        predicao = self.pipeline.predict(df_entrada)
-        raw_pred = predicao[0]
+        try:
+            predicao = self.pipeline.predict(df_entrada)
+            raw_pred = predicao[0]
+        except Exception as e:
+            logger.error(f"Erro ao executar predict() no modelo de IA: {str(e)}")
+            raise HTTPException(
+                status_code=503, 
+                detail="Erro durante a execução do modelo de IA."
+            )
         
         text_to_id = {"NORMAL": 0, "ATTENTION": 1, "RISK": 2}
         id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
         
         if isinstance(raw_pred, (int, np.integer)):
             class_id = int(raw_pred)
-            status_text = id_to_text.get(class_id, "NORMAL")
+            if class_id not in id_to_text:
+                logger.error(f"Classe numérica desconhecida retornada pelo modelo: {class_id}")
+                raise HTTPException(
+                    status_code=503, 
+                    detail="Classe inválida retornada pelo modelo de IA."
+                )
+            status_text = id_to_text[class_id]
         else:
             status_text = str(raw_pred).upper()
-            class_id = text_to_id.get(status_text, 0)
-        
-        confidence = 0.0
+            if status_text not in text_to_id:
+                logger.error(f"Classe textual desconhecida retornada pelo modelo: {status_text}")
+                raise HTTPException(
+                    status_code=503, 
+                    detail="Classe inválida retornada pelo modelo de IA."
+                )
+            class_id = text_to_id[status_text]
         try:
             probabilidades = self.pipeline.predict_proba(df_entrada)
             confidence = float(np.max(probabilidades[0]))
-        except Exception:
-            confidence = 0.0
+        except Exception as e:
+            logger.error(f"Erro ao calcular confidence do modelo: {str(e)}")
+            raise HTTPException(
+                status_code=503, 
+                detail="Erro durante a execução do modelo de IA."
+            )
             
         return class_id, status_text, confidence
