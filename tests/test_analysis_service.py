@@ -89,6 +89,8 @@ def test_analisar_comportamento_pet_inexistente(analysis_service):
     
     assert resultado is None
 
+from fastapi import HTTPException
+
 def test_analisar_comportamento_falha_no_modelo(analysis_service):
     analysis_service.history_service.obter_ultimo_registro = MagicMock(return_value={
         "idadeAnos": 3.0, "pesoKg": 10.0, "atividadePct": 60.0, "sonoHoras": 12.0,
@@ -100,7 +102,8 @@ def test_analisar_comportamento_falha_no_modelo(analysis_service):
     
     analysis_service.pipeline.predict.side_effect = Exception("Erro interno no modelo de Machine Learning")
     
-    resultado = analysis_service.analisar_comportamento(1)
-    
-    assert resultado is not None
-    assert resultado["status"] == "INDISPONIVEL"
+    import pytest
+    with pytest.raises(HTTPException) as exc_info:
+        analysis_service.analisar_comportamento(1)
+        
+    assert exc_info.value.status_code == 503

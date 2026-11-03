@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from api.services.history_service import HistoryService
 import logging
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,10 @@ class AnalysisService:
     def analisar_comportamento(self, pet_id: int, payload: dict = None):
         logger.info(f"A iniciar análise de comportamento para o petId: {pet_id}")
         
+        if not self.pipeline:
+            logger.error("Pipeline de machine learning não está disponível.")
+            raise HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")
+
         ultimo = self.history_service.obter_ultimo_registro(pet_id)
 
         if not ultimo:
@@ -80,20 +85,17 @@ class AnalysisService:
             "score_comportamento": float(ultimo.get("scoreComportamento", 8.0))
         }])
 
-        status_ml = "NORMAL"
-        if self.pipeline:
-            try:
-                pred = self.pipeline.predict(df_input)
-                val = str(pred[0])
-                mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
-                status_ml = mapping.get(val, val)
-                
-                probabilidades = self.pipeline.predict_proba(df_input)
-                confidence_val = float(max(probabilidades[0]))
-            except Exception as e:
-              logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
-              status_ml = "INDISPONIVEL"
-              confidence_val = None
+        try:
+            pred = self.pipeline.predict(df_input)
+            val = str(pred[0])
+            mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
+            status_ml = mapping.get(val, val)
+            
+            probabilidades = self.pipeline.predict_proba(df_input)
+            confidence_val = float(max(probabilidades[0]))
+        except Exception as e:
+            logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
+            raise HTTPException(status_code=503, detail="Erro durante a execução do modelo de IA.")
 
         media_atividade = float(medias.get("mediaAtividadePct", 0))
         ativ_atual = float(ultimo.get("atividadePct", 0))
@@ -121,7 +123,7 @@ class AnalysisService:
             "variacaoPct": var_ativ,
             "tendencia": tendencia_qualitativa,
             "status": status_ml,
-            "confidence": round(confidence_val, 2) if 'confidence_val' in locals() and confidence_val else 0.85,
+            "confidence": round(confidence_val, 2),
             "alteracoes": alteracoes,
             "justificativaNumerica": justificativa_detalhada
         }

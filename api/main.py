@@ -99,8 +99,9 @@ analysis_service = AnalysisService()
 
 @app.post("/api/ai/analyze", response_model=AIAnalysisResponse)
 def analyze_measurement(data: MeasurementInput):
-    status_text = "NORMAL"
-    confidence = 0.85
+    if not pet_controller.pipeline:
+        logger.error("Tentativa de análise sem o pipeline de Machine Learning carregado.")
+        raise HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")
 
     idade_real = 3.0
     peso_real = 12.5
@@ -114,31 +115,32 @@ def analyze_measurement(data: MeasurementInput):
     except Exception as e:
         logger.warning(f"Não foi possível obter idade e peso reais do histórico: {e}")
 
-    if pet_controller.pipeline:
-        df_entrada = pd.DataFrame([{
-            "idade_anos": idade_real, 
-            "peso_kg": peso_real,
-            "atividade_diaria_pct": data.activityLevel,
-            "sono_horas": data.sleepHours,
-            "frequencia_cardiaca_bpm": data.heartRate,
-            "frequencia_respiratoria": data.respiratoryRate,
-            "temperatura_c": data.temperature,
-            "score_comportamento": data.behaviorScore
-        }])
-        try:
-            predicao = pet_controller.pipeline.predict(df_entrada)
-            raw_pred = predicao[0]
-            id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
-            
-            if isinstance(raw_pred, (int, np.integer)):
-                status_text = id_to_text.get(int(raw_pred), "NORMAL")
-            else:
-                status_text = str(raw_pred).upper()
+    df_entrada = pd.DataFrame([{
+        "idade_anos": idade_real, 
+        "peso_kg": peso_real,
+        "atividade_diaria_pct": data.activityLevel,
+        "sono_horas": data.sleepHours,
+        "frequencia_cardiaca_bpm": data.heartRate,
+        "frequencia_respiratoria": data.respiratoryRate,
+        "temperatura_c": data.temperature,
+        "score_comportamento": data.behaviorScore
+    }])
+    
+    try:
+        predicao = pet_controller.pipeline.predict(df_entrada)
+        raw_pred = predicao[0]
+        id_to_text = {0: "NORMAL", 1: "ATTENTION", 2: "RISK"}
+        
+        if isinstance(raw_pred, (int, np.integer)):
+            status_text = id_to_text.get(int(raw_pred), "NORMAL")
+        else:
+            status_text = str(raw_pred).upper()
 
-            probabilidades = pet_controller.pipeline.predict_proba(df_entrada)
-            confidence = float(np.max(probabilidades[0]))
-        except Exception as e:
-            logger.error(f"Erro durante a predição do modelo: {e}")
+        probabilidades = pet_controller.pipeline.predict_proba(df_entrada)
+        confidence = float(np.max(probabilidades[0]))
+    except Exception as e:
+        logger.error(f"Erro durante a predição do modelo: {e}")
+        raise HTTPException(status_code=503, detail="Erro durante a execução do modelo de IA.")
 
     try:
         from api.services.history_service import HistoryService
