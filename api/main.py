@@ -109,8 +109,8 @@ def analyze_measurement(data: MeasurementInput):
     if not resultado:
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
 
-    status_text = resultado.get("status", "NORMAL")
-    confidence = resultado.get("confidence", 0.85)
+    status_text = resultado["status"]
+    confidence = resultado["confidence"]
     justificativa = resultado.get("justificativaNumerica", "Análise efetuada com base na medição e histórico.")
 
     recomendacoes = [

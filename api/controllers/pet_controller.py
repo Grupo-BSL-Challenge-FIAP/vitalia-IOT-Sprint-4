@@ -1,5 +1,3 @@
-import os
-import joblib
 import pandas as pd
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
@@ -225,7 +223,7 @@ async def analisar_medicao_pet(pet_id: str, data: MeasurementInput, credentials:
         raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
 
     status_text = resultado["status"]
-    confidence = resultado.get("confidence", 0.85)
+    confidence = resultado["confidence"]
 
     recomendacao = "Acompanhe as alterações nas próximas horas."
     if status_text == "RISK":
