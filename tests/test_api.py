@@ -239,8 +239,10 @@ def test_java_analyze_pet_id_diferente():
     assert response.status_code == 400
     assert response.json()["detail"] == "O ID do pet na URL não corresponde ao ID do payload."
 
+from fastapi import HTTPException
+
 def test_java_analyze_pipeline_indisponivel():
-    with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=DatabaseConnectionError("Pipeline indisponível")):
+    with patch("api.services.analysis_service.AnalysisService.analisar_comportamento", side_effect=HTTPException(status_code=503, detail="Serviço de IA temporariamente indisponível.")):
         payload = {
             "petId": 1,
             "activityLevel": 50.0,
@@ -252,3 +254,4 @@ def test_java_analyze_pipeline_indisponivel():
         }
         response = client.post("/api/ai/pets/1/measurements/analyze", json=payload)
         assert response.status_code == 503
+        assert response.json()["detail"] == "Serviço de IA temporariamente indisponível."
