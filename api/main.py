@@ -8,13 +8,10 @@ from pydantic import BaseModel, Field
 from typing import List
 from fastapi import FastAPI, Depends, Request, HTTPException
 from api.services.analysis_service import AnalysisService
-
 from api.controllers.pet_controller import router as pet_router
 from api.security import verificar_autenticacao
 from api.exceptions import DatabaseConnectionError
 import joblib
-import pandas as pd
-import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -85,14 +82,6 @@ async def json_decode_exception_handler(request: Request, exc: JSONDecodeError):
             "mensagem": "Erro de validação nos dados enviados."
         }
     )
-
-PIPELINE_PATH = os.path.join(os.path.dirname(__file__), '../models/trained/vitalia_pipeline.pkl')
-try:
-    pipeline = joblib.load(PIPELINE_PATH)
-    logger.info("Pipeline de Machine Learning carregado com sucesso.")
-except Exception as e:
-    logger.warning(f"Não foi possível carregar o pipeline de ML: {e}")
-    pipeline = None
 
 analysis_service = AnalysisService()
 
