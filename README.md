@@ -7,6 +7,10 @@ Link API Local
 ```Bash
 http://127.0.0.1:8000/docs
 ```
+Link API Publica
+```Bash
+https://vitalia-iot-sprint-4.onrender.com/docs
+```
 Link Youtube (ATUALIZAR)
 ```Bash
 https://youtu.be/oiDqsuIKKLs
