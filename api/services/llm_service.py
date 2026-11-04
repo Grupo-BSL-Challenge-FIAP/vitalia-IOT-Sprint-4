@@ -2,7 +2,6 @@
 import time
 from dotenv import load_dotenv
 from google import genai
-from google.genai.errors import APIError, ServerError
 
 load_dotenv()
 
@@ -19,19 +18,72 @@ class LLMService:
 
     def answer(self, contexto, pergunta: str) -> str:
         if isinstance(contexto, dict):
-            nome = contexto.get("nome", "Thor")
-            especie = contexto.get("especie", "Cão")
-            temperatura = contexto.get("temperatura", "41.0")
-            status_ml = contexto.get("status", "RISK")
-            fc = contexto.get("frequenciaCardiaca", "185")
-        else:
-            nome, especie, temperatura, status_ml, fc = "Thor", "Cão", "41.0", "RISK", "185"
+            nome = contexto.get("nome", "Não informado")
+            especie = contexto.get("especie", "Não informada")
+            idade = contexto.get("idade", contexto.get("idadeAnos", "Não informada"))
+            peso = contexto.get("peso", contexto.get("pesoKg", "Não informado"))
+            fc = contexto.get("frequenciaCardiaca", contexto.get("frequenciaCardiacaBpm", "Não informada"))
+            fr = contexto.get("frequenciaRespiratoria", "Não informada")
+            temperatura = contexto.get("temperatura", contexto.get("temperaturaC", "Não informada"))
+            behavior_score = contexto.get("behaviorScore", contexto.get("scoreComportamento", "Não informado"))
+            historico = contexto.get("historicoRecente", contexto.get("historico", "Nenhum histórico recente disponível"))
+            status_ml = contexto.get("status", "NORMAL")
+            alteracoes = contexto.get("alteracoes", "Nenhuma alteração significativa detetada")
 
-        return (
-            f"Olá! Com base na análise recente do pet {nome} ({especie}), "
-            f"o sistema detetou um estado clínico classificado como {status_ml}. "
-            f"O principal alerta deve-se à elevação da temperatura corporal para {temperatura}°C e frequência cardíaca de {fc} bpm, "
-            f"acompanhadas por uma queda drástica na atividade diária. "
-            f"Recomendamos o encaminhamento imediato para avaliação com um médico veterinário."
-        )
+            contexto_formatado = f"""
+                - Nome do pet: {nome}
+                - Espécie: {especie}
+                - Idade: {idade} anos
+                - Peso: {peso} kg
+                - Frequência cardíaca: {fc} bpm
+                - Frequência respiratória: {fr} rpm
+                - Temperatura: {temperatura} °C
+                - Behavior score: {behavior_score}
+                - Histórico recente: {historico}
+                - Status retornado pelo ML: {status_ml}
+                - Alterações detetadas: {alteracoes}
+            """
+        else:
+            contexto_formatado = str(contexto)
+
+        if not self.client:
+            return "[Modo Fallback - Sem Chave de API configurada]"
+
+        prompt = f"""
+            Você é o assistente virtual inteligente da Vitalia AI, especializado em saúde e comportamento animal.
+            Responda de forma completa, natural, inteligente e detalhada à pergunta do tutor, utilizando o contexto do pet abaixo quando relevante, e respondendo livremente a qualquer dúvida apresentada.
+
+            Contexto estruturado do pet:
+            {contexto_formatado}
+
+            Pergunta do tutor:
+            {pergunta}
+        """
+
+        max_retries = 2
+        for tentativa in range(max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model='gemini-3.5-flash-lite',
+                    contents=prompt
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                try:
+                    response = self.client.models.generate_content(
+                        model='gemini-2.0-flash',
+                        contents=prompt
+                    )
+                    if response and response.text:
+                        return response.text
+                except Exception:
+                    pass
+
+                if tentativa == max_retries - 1:
+                    return f"[Erro na API do Gemini]: {str(e)}"
+                time.sleep(1)
+
+        return "[Erro de Conexão com a IA]"
+
 llm_service = LLMService()
