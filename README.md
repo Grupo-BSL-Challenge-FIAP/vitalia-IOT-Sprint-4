@@ -132,17 +132,17 @@ graph TD
 
 * `GET /api/ai/pets/{pet_id}/trends` — Retorna tendências temporais e médias históricas.
 
-* `POST /api/ai/analyze` — Retorna tendências temporais e médias históricas.
+* `POST /api/ai/analyze` — Analisa uma nova medição utilizando os dados atuais e o histórico do pet. Retorna status, confidence, resumo e recomendações.
 
 ⚠️ Aviso: Endpoint utilizado pelo backend Java
 
-* `POST /api/ai/pets/{petId}/measurements/analyze` — Retorna tendências temporais e médias históricas.
+* `POST /api/ai/pets/{petId}/measurements/analyze` — Endpoint utilizado pelo backend Java para analisar uma nova medição do pet. Retorna status, confidence e recommendation.
 
 ```JSON
 {
   "status": "ATTENTION",
   "confidence": 0.91,
-  "recommendation": "..."
+  "recommendation": "Acompanhe as alterações identificadas nas próximas horas."
 }
 ```
 
