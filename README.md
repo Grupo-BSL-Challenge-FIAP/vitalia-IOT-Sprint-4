@@ -11,9 +11,9 @@ Link API Publica
 ```Bash
 https://vitalia-iot-sprint-4.onrender.com/docs
 ```
-Link Youtube (ATUALIZAR)
+Link Youtube
 ```Bash
-https://youtu.be/oiDqsuIKKLs
+https://www.youtube.com/watch?v=JvE9FAXA-Gw
 ```
 ---
 👥 Integrantes do Grupo
