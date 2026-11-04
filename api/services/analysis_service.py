@@ -89,11 +89,18 @@ class AnalysisService:
         try:
             pred = self.pipeline.predict(df_input)
             val = str(pred[0])
-            mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK"}
-            status_ml = mapping.get(val, val)
+            mapping = {"0": "NORMAL", "1": "ATTENTION", "2": "RISK", "NORMAL": "NORMAL", "ATTENTION": "ATTENTION", "RISK": "RISK"}
+            
+            if val not in mapping:
+                logger.error(f"Classe desconhecida retornada pelo modelo no analisar_comportamento: {val}")
+                raise HTTPException(status_code=503, detail="Classe inválida retornada pelo modelo de IA.")
+                
+            status_ml = mapping[val]
             
             probabilidades = self.pipeline.predict_proba(df_input)
             confidence_val = float(max(probabilidades[0]))
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Erro ao executar a predição do modelo para o petId {pet_id}: {str(e)}")
             raise HTTPException(status_code=503, detail="Erro durante a execução do modelo de IA.")
