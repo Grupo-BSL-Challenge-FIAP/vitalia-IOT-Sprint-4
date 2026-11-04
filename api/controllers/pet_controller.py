@@ -202,10 +202,6 @@ def analisar_medicao_pet(petId: int, payload: MeasurementInput, credentials: str
         )
     
     try:
-        ultimo = history_service.obter_ultimo_registro(petId)
-        if not ultimo:
-            raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
-
         resultado = analysis_service.analisar_comportamento(petId, payload.model_dump())
         
         if not resultado:
