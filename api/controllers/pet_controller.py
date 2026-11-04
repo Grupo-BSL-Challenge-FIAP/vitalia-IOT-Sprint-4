@@ -207,7 +207,7 @@ def analisar_medicao_pet(petId: int, payload: MeasurementInput, credentials: str
         if not resultado:
             raise HTTPException(status_code=404, detail="Pet não encontrado no histórico ou base indisponível.")
 
-        status = resultado.get("status", "NORMAL")
+        status = resultado["status"] 
         
         if status == "RISK":
             recomendacao = "⚠️ ATENÇÃO: Os indicadores apontam para um desvio crítico. Considerar avaliação veterinária."
