@@ -219,7 +219,7 @@ def analisar_medicao_pet(petId: int, payload: MeasurementInput, credentials: str
         return {
             "petId": petId,
             "status": status,
-            "confidence": resultado.get("confidence", 0.90),
+            "confidence": resultado["confidence"],
             "recommendation": recomendacao,
             "summary": resultado.get("justificativaNumerica", "Análise realizada com sucesso.")
         }
