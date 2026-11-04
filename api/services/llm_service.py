@@ -27,7 +27,6 @@ class LLMService:
         else:
             nome, especie, temperatura, status_ml, fc = "Thor", "Cão", "41.0", "RISK", "185"
 
-        # Resposta direta gerada para a demonstração funcional da apresentação
         return (
             f"Olá! Com base na análise recente do pet {nome} ({especie}), "
             f"o sistema detetou um estado clínico classificado como {status_ml}. "
